@@ -16,3 +16,8 @@ img {
   object-fit: cover;
   aspect-ratio: 1;
 }
+
+.MuiAlert-message {
+  min-width: 0;
+  word-wrap: break-word;
+}

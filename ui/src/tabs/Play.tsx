@@ -3,7 +3,6 @@ import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import Alert from "@mui/material/Alert";
-import { Typography } from "@mui/material";
 import * as contract from "../contract";
 import Loading from "./components/Loading";
 
@@ -13,10 +12,8 @@ export default function Upload() {
     const [submitSetupInput, setSubmitSetupInput] = useState("");
     const [submitMoveInput, setSubmitMoveInput] = useState("");
 
-    const [registerOutput, setRegisterOutput] = useState("");
-    const [submitSetupOutput, setSubmitSetupOutput] = useState("");
-    const [submitMoveOutput, setSubmitMoveOutput] = useState("");
-    const [circuitOutput, setCircuitOutput] = useState("");
+    const [callOutput, setCallOutput] = useState(false);
+    const [callOutputMsg, setCallOutputMsg] = useState("");
 
     const [error, setError] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
@@ -28,14 +25,26 @@ export default function Upload() {
     const register = async (event: any) => {
         event.preventDefault();
         setError(false);
+        setCallOutput(false);
 
         setRegistering(true);
-        setRegisterOutput(await contract.register()
-        .catch((error: any) => {
-            setErrorMsg(error.toString());
-            setError(true);
-            setRegistering(false);
-        }));
+        await contract.register().then(
+            (value: any) => {
+                setCallOutputMsg(value);
+                setCallOutput(true);
+            },
+            (error: any) => {
+                setErrorMsg(error.toString());
+                setError(true);
+                setRegistering(false);
+            });
+        
+        // setRegisterOutput(await contract.register()
+        //     .catch((error: any) => {
+        //         setErrorMsg(error.toString());
+        //         setError(true);
+        //         setRegistering(false);
+        //     }));
         setRegistering(false);
         event.preventDefault();
     }
@@ -43,14 +52,26 @@ export default function Upload() {
     const submitSetup = async (event: any) => {
         event.preventDefault();
         setError(false);
+        setCallOutput(false);
 
         setSubmittingSetup(true);
-        setSubmitSetupOutput(await contract.submitSetup(submitSetupInput)
-            .catch((error: any) => {
+        await contract.submitSetup(submitSetupInput).then(
+            (value: any) => {
+                setCallOutputMsg(value);
+                setCallOutput(true);
+            },
+            (error: any) => {
                 setErrorMsg(error.toString());
                 setError(true);
                 setSubmittingSetup(false);
-            }));
+            });
+
+        // setSubmitSetupOutput(await contract.submitSetup(submitSetupInput)
+        //     .catch((error: any) => {
+        //         setErrorMsg(error.toString());
+        //         setError(true);
+        //         setSubmittingSetup(false);
+        //     }));
         setSubmittingSetup(false);
         event.preventDefault();
     }
@@ -58,14 +79,26 @@ export default function Upload() {
     const submitMove = async (event: any) => {
         event.preventDefault();
         setError(false);
+        setCallOutput(false);
 
         setSubmittingMove(true);
-        setSubmitMoveOutput(await contract.submitMove(submitMoveInput)
-            .catch((error: any) => {
+        await contract.submitMove(submitMoveInput).then(
+            (value: any) => {
+                setCallOutputMsg(value);
+                setCallOutput(true);
+            },
+            (error: any) => {
                 setErrorMsg(error.toString());
                 setError(true);
                 setSubmittingMove(false);
-            }));
+            });
+
+        // setSubmitMoveOutput(await contract.submitMove(submitMoveInput)
+        //     .catch((error: any) => {
+        //         setErrorMsg(error.toString());
+        //         setError(true);
+        //         setSubmittingMove(false);
+        //     }));
         setSubmittingMove(false);
         event.preventDefault();
     }
@@ -168,10 +201,7 @@ export default function Upload() {
             {SubmittingSetup ? <Loading text="Submitting setup..." /> : <div />}
             {SubmittingMove ? <Loading text="Submitting move..." /> : <div />}
             {error ? <Alert severity="error" sx={{ textAlign: "left" }}>{errorMsg}</Alert> : <div />}
-            {/* <Typography>{registerOutput}</Typography> */}
-            <Typography>{submitSetupOutput}</Typography>
-            <Typography>{submitMoveOutput}</Typography>
-            <Typography>{circuitOutput}</Typography>
+            {callOutput ? <Alert severity="success" sx={{ textAlign: "left" }}>{callOutputMsg}</Alert> : <div />}
         </Box>
     );
 }

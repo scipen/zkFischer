@@ -16,15 +16,6 @@ const Fr = new F1Field(exports.p);
 
 const PIECES = {"R": 1, "N": 2, "B": 3, "Q": 4, "K": 5}  // 0 as filler value
 
-// there are 5 equivalence classes of chess moves
-// all values are constrained to len 3 so we use 0 as the filler value
-const ALLOWED_PIECES = {
-    "diag-2+": [3, 4, 0],
-    "orthog-2+": [1, 4, 0],
-    "diag-1": [3, 4, 5],
-    "orthog-1": [1, 4, 5],
-    "knight": [2, 0, 0],
-}
 
 describe("verifyPlacement circuit test", function () {
     before(async () => {
@@ -41,9 +32,11 @@ describe("verifyPlacement circuit test", function () {
         const gameKey = 0;
         const poseidonHash = poseidon.F.e(poseidon([...boardSetup, boardSetupKey, gameKey]));
         const setupHash = poseidon.F.toString(poseidonHash, 10);
+        const kingFile = 4;
         
         const INPUT = {
             "setupHash": setupHash,
+            "kingFile": kingFile,
             "gameKey": gameKey,
             "boardSetup": boardSetup,
             "boardSetupKey": boardSetupKey,
@@ -61,9 +54,30 @@ describe("verifyPlacement circuit test", function () {
         const gameKey = 0;
         const poseidonHash = poseidon.F.e(poseidon([...boardSetup, boardSetupKey, gameKey]));
         const setupHash = poseidon.F.toString(poseidonHash, 10);
+        const kingFile = 4;
         
         const INPUT = {
             "setupHash": setupHash,
+            "kingFile": kingFile,
+            "gameKey": gameKey,
+            "boardSetup": boardSetup,
+            "boardSetupKey": boardSetupKey,
+        }
+        await expect(circuit.calculateWitness(INPUT, true)).to.be.rejected;
+    });
+
+    it("verifyPlacement fails for invalid king file", async () => {
+        // 2 queens
+        const boardSetup = [PIECES["R"], PIECES["N"], PIECES["B"], PIECES["Q"], PIECES["K"], PIECES["B"], PIECES["N"], PIECES["R"]];
+        const boardSetupKey = 1000;
+        const gameKey = 0;
+        const poseidonHash = poseidon.F.e(poseidon([...boardSetup, boardSetupKey, gameKey]));
+        const setupHash = poseidon.F.toString(poseidonHash, 10);
+        const kingFile = 0;
+        
+        const INPUT = {
+            "setupHash": setupHash,
+            "kingFile": kingFile,
             "gameKey": gameKey,
             "boardSetup": boardSetup,
             "boardSetupKey": boardSetupKey,
@@ -92,9 +106,11 @@ describe("verifyPlacement verifier contract test", function () {
         const gameKey = 0;
         const poseidonHash = poseidon.F.e(poseidon([...boardSetup, boardSetupKey, gameKey]));
         const setupHash = poseidon.F.toString(poseidonHash, 10);
+        const kingFile = 4;
         
         const INPUT = {
             "setupHash": setupHash,
+            "kingFile": kingFile,
             "gameKey": gameKey,
             "boardSetup": boardSetup,
             "boardSetupKey": boardSetupKey,

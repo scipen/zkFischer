@@ -11,6 +11,7 @@ template VerifyPlacement() {
 
     // public
     signal input setupHash;  // hash(boardSetup, boardSetupKey, gameKey)
+    signal input kingFile;
     signal input gameKey;  // unique for each game. e.g. concat contributions from each player
     
     // private
@@ -138,6 +139,29 @@ template VerifyPlacement() {
         boardSetupCounter[i].in[1] <== expected_cts[i];
         boardSetupCounter[i].out === 1;
     }
+
+
+    // validate kingFile matches position in setup
+    component kingFileMux = Mux3();
+    kingFileMux.c[0] <== boardSetup[0];
+    kingFileMux.c[1] <== boardSetup[1];
+    kingFileMux.c[2] <== boardSetup[2];
+    kingFileMux.c[3] <== boardSetup[3];
+    kingFileMux.c[4] <== boardSetup[4];
+    kingFileMux.c[5] <== boardSetup[5];
+    kingFileMux.c[6] <== boardSetup[6];
+    kingFileMux.c[7] <== boardSetup[7];
+
+    component kingFileBits = Num2Bits(3);
+    kingFileBits.in <== kingFile;
+    kingFileMux.s[0] <== kingFileBits.out[0];
+    kingFileMux.s[1] <== kingFileBits.out[1];
+    kingFileMux.s[2] <== kingFileBits.out[2];
+
+    component kingCheck = IsEqual();
+    kingCheck.in[0] <== 5;  // K
+    kingCheck.in[1] <== kingFileMux.out;
+    kingCheck.out === 1;
 
 
     // validate `setupHash` = hash(boardSetup, boardSetupKey, gameKey)

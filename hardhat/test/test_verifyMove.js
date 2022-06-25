@@ -37,7 +37,7 @@ describe("verifyMove circuit test", function () {
 
     it("verifyMove passes for valid move", async () => {
         const moveType = "diag-2+";
-        const pieceFile = [0, 1, 1];  // 0b011 = 3 = queen
+        const pieceFile = [0, 1, 1];  // 0b011 = 3 = bishop
 
         const boardSetup = [PIECES["R"], PIECES["N"], PIECES["B"], PIECES["Q"], PIECES["K"], PIECES["B"], PIECES["N"], PIECES["R"]];
         const boardSetupKey = 1000;

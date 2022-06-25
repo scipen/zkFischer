@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
@@ -151,6 +151,7 @@ export default function Upload() {
                 multiline
                 defaultValue='{
                     "setupHash": "16362932092467779236188667745398721008062465179344094948620141050502887252044",
+                    "kingFile": 4,
                     "gameKey": 0,
                     "boardSetup": [1, 2, 3, 4, 5, 3, 2, 1],
                     "boardSetupKey": 1000
@@ -175,9 +176,11 @@ export default function Upload() {
                 type="text"
                 multiline
                 defaultValue='{
-                    "pieceFile": [0, 1, 1],
+                    "fromSq": [7,1],
+                    "toSq": [5,0],
+                    "pieceFile": [0, 0, 1],
                     "requiredHash": "16362932092467779236188667745398721008062465179344094948620141050502887252044",
-                    "allowedPieces": [3, 4, 0],
+                    "allowedPieces": [2, 0, 0],
                     "gameKey": 0,
                     "boardSetup": [1, 2, 3, 4, 5, 3, 2, 1],
                     "boardSetupKey": 1000

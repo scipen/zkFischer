@@ -3,7 +3,8 @@ import address from './artifacts/address.json';
 import { generateCalldata } from './circuit_js/generate_calldata';
 import zkFischer from './artifacts/zkFischer.json';
 
-let gameContract: ethers.Contract;
+
+export let gameContract: ethers.Contract;
 
 export async function connectContract() {
     const { ethereum } = window;
@@ -20,7 +21,14 @@ export async function register() {
     await connectContract();
     
     try {
-        await gameContract.register();
+        let tx = await gameContract.register();
+        console.log(tx);
+        
+        let receipt = await tx.wait();
+        console.log(receipt);
+
+        let sumEvent = receipt.events.pop();
+        console.log(sumEvent);
         return "Registration successful.";
     } catch(error) {
         throw JSON.stringify(error);
@@ -53,11 +61,16 @@ export async function submitSetup(input: any) {
 export async function submitMove(input: any) {
     await connectContract();
     input = JSON.parse(input);
+    let fromSq = input["fromSq"];
+    let toSq = input["toSq"];
+    delete input["fromSq"]; 
+    delete input["toSq"];
+    console.log(input);
     let calldata = await generateCalldata(input, 'verifyMove_final.zkey', 'verifyMove.wasm');
 
     if (calldata) {
         try {
-            let valid = await gameContract.move(input["moveCmd"], calldata[0], calldata[1], calldata[2], calldata[3]);
+            let valid = await gameContract.move(fromSq, toSq, calldata[0], calldata[1], calldata[2], calldata[3]);
             if (valid) {
                 return calldata[3];
             }

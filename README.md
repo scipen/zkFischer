@@ -18,3 +18,35 @@ deploying "zkFischer" (tx: 0x9adef364ec1983e0de71a419e510def451ff39113dd3f6ae861
 Boilerplate sources:
 * https://github.com/socathie/zkApp/
 * https://github.com/enu-kuro/zku-final-project/
+
+
+## Building
+
+In `hardhat/`, run `npm i` and `npm run test:full`. In `ui/`, run `npm i` and `npm run copy`.
+
+To deploy to devnet, create `hardhat/.env` and add `HARMONY_PRIVATE_KEY=yourKey`. Then run `npx hardhat deploy --network devnet`. To test locally, go to `hardhat/` and run `npx hardhat node`.
+
+Manually update `ui/src/artifacts/address.json` with your contract addresses and run `npm start`. Depending on your network, you may have to update some network specific configs in `ui/src/`.
+
+## Mechanism
+
+zkFischer uses two circuits: `verifyPlacement` and `verifyMove` (both in `hardhat/circuits`).
+
+When a player initially sets up their board, they must send the contract a ZKP using `verifyPlacement` to prove that their setup is valid (2 rooks, 2 knights, etc). Their hashed board setup is committed to the contract.
+
+During gameplay, the contract keep track of which squares are occupied by revealed pieces (i.e. pawn or king) and which are occupied by hidden ones. When a player moves a hidden piece, they must send the contract a ZKP using `verifyMove` showing that this piece's starting location (public info) is consistent with the type of move it tried to make (e.g. diagonal implies bishop or queen) and the owner's committed board setup hash.
+
+Both circuits include a public `gameKey` input and private `boardSetupKey` input to thwart rainbow attacks.
+
+TODO: `gameKey` is currently hardcoded to 0 due to hitting a contract size limit.
+
+## Playing
+
+Should be self-explanatory once the UI is integrated (currently not).
+
+## TODOs
+
+* Add UI
+* Enable more code by splitting up contract
+* Add some missing chess rules
+* Add variants like atomic chess

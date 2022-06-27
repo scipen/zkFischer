@@ -31,10 +31,6 @@ contract zkFischer {
     uint constant BLACK = 2;
     // mapping(string => uint) private pieces;  // values specific to contract
     // mapping(uint => uint) private pieceColor;  // see constructor
-    // uint[20] private pieceColor = [
-    //     0,1,1,1,1,1,1,0,0,1,
-    //     0,2,2,2,2,2,2,0,0,2
-    // ];
     // mapping(string => uint8[3]) private allowedPieces;  // keys, values from in circuit
 
     // keep track of each piece's initial file throughout game.
@@ -104,33 +100,6 @@ contract zkFischer {
         // pieceColor[pieces['bK']] = BLACK;
         // pieceColor[pieces['bP']] = BLACK;
         // pieceColor[pieces['bZ']] = BLACK;
-
-        // pieceColor[1] = WHITE;
-        // pieceColor[2] = WHITE;
-        // pieceColor[3] = WHITE;
-        // pieceColor[4] = WHITE;
-        // pieceColor[5] = WHITE;
-        // pieceColor[6] = WHITE;
-        // pieceColor[9] = WHITE;
-        // pieceColor[11] = BLACK;
-        // pieceColor[12] = BLACK;
-        // pieceColor[13] = BLACK;
-        // pieceColor[14] = BLACK;
-        // pieceColor[15] = BLACK;
-        // pieceColor[16] = BLACK;
-        // pieceColor[19] = BLACK;
-        // pieceColor[pieces['wB']] = WHITE;
-        // pieceColor[pieces['wQ']] = WHITE;
-        // pieceColor[pieces['wK']] = WHITE;
-        // pieceColor[pieces['wP']] = WHITE;
-        // pieceColor[pieces['wZ']] = WHITE;
-        // pieceColor[pieces['bR']] = BLACK;
-        // pieceColor[pieces['bN']] = BLACK;
-        // pieceColor[pieces['bB']] = BLACK;
-        // pieceColor[pieces['bQ']] = BLACK;
-        // pieceColor[pieces['bK']] = BLACK;
-        // pieceColor[pieces['bP']] = BLACK;
-        // pieceColor[pieces['bZ']] = BLACK;
         resetGame();
     }
 
@@ -147,28 +116,7 @@ contract zkFischer {
         phasingPlayer = 0;
         players = [address(0), address(0)];
         setupHashes = [0, 0];
-
-        // for (uint i=0; i < 8; i++) {
-        //     for (uint j=0; j < 8; j++) {
-        //         if (i<=1 || i>=6) {
-        //             startingFiles[i][j] = j;
-        //         } else{
-        //             startingFiles[i][j] = 99;
-        //         }
-        //     }
-        // }
-
-        // for (uint j=0; j < 8; j++) {
-        //     startingFiles[0][j] = j;
-        //     startingFiles[1][j] = j;
-        //     startingFiles[2][j] = 99;
-        //     startingFiles[3][j] = 99;
-        //     startingFiles[4][j] = 99;
-        //     startingFiles[5][j] = 99;
-        //     startingFiles[6][j] = j;
-        //     startingFiles[7][j] = j;
-        // }
-
+        
         // bytecode size optim: 0 is now default
         uint[8] memory startingFile = [ uint(1), 2, 3, 4, 5, 6, 7, 8];
         startingFiles[0] = startingFile;
@@ -192,18 +140,6 @@ contract zkFischer {
             board[6][j] = 6;
             board[7][j] = 9;
         }
-
-        // board = [
-        //     [19,19,19,19,19,19,19,19],
-        //     [16,16,16,16,16,16,16,16],
-        //     [ 0, 0, 0, 0, 0, 0, 0, 0],
-        //     [ 0, 0, 0, 0, 0, 0, 0, 0],
-        //     [ 0, 0, 0, 0, 0, 0, 0, 0],
-        //     [ 0, 0, 0, 0, 0, 0, 0, 0],
-        //     [ 6, 6, 6, 6, 6, 6, 6, 6],
-        //     [ 9, 9, 9, 9, 9, 9, 9, 9]
-        // ];
-
         // board = [
         //     [pieces['bZ'],pieces['bZ'],pieces['bZ'],pieces['bZ'],pieces['bZ'],pieces['bZ'],pieces['bZ'],pieces['bZ']],
         //     [pieces['bP'],pieces['bP'],pieces['bP'],pieces['bP'],pieces['bP'],pieces['bP'],pieces['bP'],pieces['bP']],

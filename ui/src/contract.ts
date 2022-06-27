@@ -39,6 +39,7 @@ export async function submitSetup(input: any) {
     await connectContract();
     input = JSON.parse(input);
     let calldata = await generateCalldata(input, 'verifyPlacement_final.zkey', 'verifyPlacement.wasm');
+    console.log(calldata);
 
     if (calldata) {
         try {
@@ -67,6 +68,7 @@ export async function submitMove(input: any) {
     delete input["toSq"];
     console.log(input);
     let calldata = await generateCalldata(input, 'verifyMove_final.zkey', 'verifyMove.wasm');
+    console.log(calldata);
 
     if (calldata) {
         try {

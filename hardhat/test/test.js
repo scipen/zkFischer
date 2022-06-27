@@ -26,17 +26,189 @@ const ALLOWED_PIECES = {
     "knight": [2, 0, 0],
 }
 
-// describe("zkFischer contract test", function () {
-//     let ZkFischer;
-//     let zkFischer;
+const DUMMY_MOVE_ARGS = [
+    [0, 0],
+    [[0, 0], [0, 0]],
+    [0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0]
+];
 
-//     beforeEach(async function () {
-//         ZkFischer = await ethers.getContractFactory("zkFischer");
-//         zkFischer = await ZkFischer.deploy();
-//         await zkFischer.deployed();
-//     });
+function sqToCoords(file, rank) {
+    row = 7-rank + 1;
+    col = {
+        'a': 0,
+        'b': 1,
+        'c': 2,
+        'd': 3,
+        'e': 4,
+        'f': 5,
+        'g': 6,
+        'h': 7
+    }[file];
+    return [row, col]
+}
 
-//     it("Should validate move", async function () {
-//         await zkFischer.validate();
-//     });
-// });
+describe("zkFischer contract test", function () {
+    let ZkFischer;
+    let zkFischer;
+    let p0;
+    let p1;
+    let p2;
+    let poseidon;
+
+    before(async function () {
+        poseidon = await buildPoseidon();  // default BN128
+        assert(poseidon.F.p == Fr.p, "Poseidon configured with field of same order");
+    });
+
+    beforeEach(async function () {
+        let placementVerifier = await ethers.getContractFactory("VerifyPlacementVerifier");
+        let placementverifier = await placementVerifier.deploy();
+        await placementverifier.deployed();
+
+        let moveVerifier = await ethers.getContractFactory("VerifyMoveVerifier");
+        let moveverifier = await moveVerifier.deploy();
+        await moveverifier.deployed();
+
+        ZkFischer = await ethers.getContractFactory("zkFischer");
+        zkFischer = await ZkFischer.deploy(placementverifier.address, moveverifier.address);
+        await zkFischer.deployed();
+
+        let signers = await ethers.getSigners();
+        p0 = zkFischer.connect(signers[0]);
+        p1 = zkFischer.connect(signers[1]);
+        p2 = zkFischer.connect(signers[2]);
+    });
+
+    it("2 different players can register", async function () {
+        await p0.register();
+        await expect(p0.register()).to.be.reverted;
+
+        await p1.register();
+        await expect(p2.register()).to.be.reverted;
+    });
+
+    it("Fool's mate", async function () {
+        await p0.register();
+        await p1.register();
+
+        let p0_board = [PIECES["R"], PIECES["N"], PIECES["B"], PIECES["Q"], PIECES["K"], PIECES["B"], PIECES["N"], PIECES["R"]];
+        let p0_setupKey = 1000;
+        let p0_gameKey = 0;
+        let p0_kingFile = 4;
+        let p0_setup = await genSetupArgs(p0_board, p0_setupKey, p0_gameKey, p0_kingFile);
+        await p0.setupBoard(p0_setup[0], p0_setup[1], p0_setup[2], p0_setup[3]);
+
+        let p1_board = [PIECES["R"], PIECES["N"], PIECES["B"], PIECES["Q"], PIECES["K"], PIECES["B"], PIECES["N"], PIECES["R"]];
+        let p1_setupKey = 2000;
+        let p1_gameKey = 0;
+        let p1_kingFile = 4;
+        let p1_setup = await genSetupArgs(p1_board, p1_setupKey, p1_gameKey, p1_kingFile);
+        await p1.setupBoard(p1_setup[0], p1_setup[1], p1_setup[2], p1_setup[3]);
+
+        let p0_move, p0_moveType, p0_pieceFile, p0_fromSq, p0_toSq;
+        let p1_move, p1_moveType, p1_pieceFile, p1_fromSq, p1_toSq;
+
+        // f3
+        p0_fromSq = sqToCoords('f', 2);
+        p0_toSq = sqToCoords('f', 3);
+        await p0.move(p0_fromSq, p0_toSq, ...DUMMY_MOVE_ARGS);
+
+        // ..e6
+        p1_fromSq = sqToCoords('e', 7);
+        p1_toSq = sqToCoords('e', 6);
+        await p1.move(p1_fromSq, p1_toSq, ...DUMMY_MOVE_ARGS);
+
+        // g4
+        p0_fromSq = sqToCoords('g', 2);
+        p0_toSq = sqToCoords('g', 4);
+        await p0.move(p0_fromSq, p0_toSq, ...DUMMY_MOVE_ARGS);
+
+        // ..Qh4# (more moves below since need king capture to end game)
+        p1_moveType = "diag-2+";
+        p1_pieceFile = [0, 1, 1];
+        p1_fromSq = sqToCoords('d', 8);
+        p1_toSq = sqToCoords('h', 4);
+        p1_move = await genMoveArgs(p1_moveType, p1_pieceFile, p1_board, p1_setupKey, p1_gameKey);
+        await p1.move(p1_fromSq, p1_toSq, ...p1_move);
+
+        // Na3
+        p0_moveType = "knight";
+        p0_pieceFile = [0, 0, 1];
+        p0_fromSq = sqToCoords('b', 1);
+        p0_toSq = sqToCoords('a', 3);
+        p0_move = await genMoveArgs(p0_moveType, p0_pieceFile, p0_board, p0_setupKey, p0_gameKey);
+        await p0.move(p0_fromSq, p0_toSq, ...p0_move);
+
+        // ..Qg6 (error: not how queen moves)
+        p1_moveType = "diag-2+";
+        p1_pieceFile = [0, 1, 1];
+        p1_fromSq = sqToCoords('h', 4);
+        p1_toSq = sqToCoords('g', 6);
+        p1_move = await genMoveArgs(p1_moveType, p1_pieceFile, p1_board, p1_setupKey, p1_gameKey);
+        await expect(p1.move(p1_fromSq, p1_toSq, ...p1_move)).to.be.reverted;
+
+        // ..Qxh1 (error: can't move through pieces)
+        p1_moveType = "orthog-2+";
+        p1_pieceFile = [0, 1, 1];
+        p1_fromSq = sqToCoords('h', 4);
+        p1_toSq = sqToCoords('h', 1);
+        p1_move = await genMoveArgs(p1_moveType, p1_pieceFile, p1_board, p1_setupKey, p1_gameKey);
+        await expect(p1.move(p1_fromSq, p1_toSq, ...p1_move)).to.be.reverted;
+
+        // ..Qxe1
+        p1_moveType = "diag-2+";
+        p1_pieceFile = [0, 1, 1];
+        p1_fromSq = sqToCoords('h', 4);
+        p1_toSq = sqToCoords('e', 1);
+        p1_move = await genMoveArgs(p1_moveType, p1_pieceFile, p1_board, p1_setupKey, p1_gameKey);
+        await p1.move(p1_fromSq, p1_toSq, ...p1_move);
+
+        // b3 (error: game already over)
+        p0_fromSq = sqToCoords('b', 2);
+        p0_toSq = sqToCoords('b', 3);
+        await expect(p0.move(p0_fromSq, p0_toSq, ...DUMMY_MOVE_ARGS)).to.be.reverted;
+    });
+
+    async function genSetupArgs(boardSetup, boardSetupKey, gameKey, kingFile) {
+        const poseidonHash = poseidon.F.e(poseidon([...boardSetup, boardSetupKey, gameKey]));
+        const setupHash = poseidon.F.toString(poseidonHash, 10);
+        const INPUT = {
+            "setupHash": setupHash,
+            "kingFile": kingFile,
+            "gameKey": gameKey,
+            "boardSetup": boardSetup,
+            "boardSetupKey": boardSetupKey,
+        }
+        const { proof, publicSignals } = await groth16.fullProve(INPUT, "circuits/build/verifyPlacement_js/verifyPlacement.wasm","circuits/build/verifyPlacement_final.zkey");
+        const calldata = await groth16.exportSolidityCallData(proof, publicSignals);
+        const argv = calldata.replace(/["[\]\s]/g, "").split(',').map(x => BigInt(x).toString());
+        const a = [argv[0], argv[1]];
+        const b = [[argv[2], argv[3]], [argv[4], argv[5]]];
+        const c = [argv[6], argv[7]];
+        const Input = argv.slice(8);
+        return [a, b, c, Input];
+    }
+
+    async function genMoveArgs(moveType, pieceFile, boardSetup, boardSetupKey, gameKey) {
+        const poseidonHash = poseidon.F.e(poseidon([...boardSetup, boardSetupKey, gameKey]));
+        const requiredHash = poseidon.F.toString(poseidonHash, 10);
+        const INPUT = {
+            "pieceFile": pieceFile,
+            "requiredHash": requiredHash,
+            "allowedPieces": ALLOWED_PIECES[moveType],
+            "gameKey": gameKey,
+            "boardSetup": boardSetup,
+            "boardSetupKey": boardSetupKey,
+        }
+        const { proof, publicSignals } = await groth16.fullProve(INPUT, "circuits/build/verifyMove_js/verifyMove.wasm","circuits/build/verifyMove_final.zkey");
+        const calldata = await groth16.exportSolidityCallData(proof, publicSignals);
+        const argv = calldata.replace(/["[\]\s]/g, "").split(',').map(x => BigInt(x).toString());
+        const a = [argv[0], argv[1]];
+        const b = [[argv[2], argv[3]], [argv[4], argv[5]]];
+        const c = [argv[6], argv[7]];
+        const Input = argv.slice(8);
+        return [a, b, c, Input];
+    }
+
+});

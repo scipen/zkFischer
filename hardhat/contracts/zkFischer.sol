@@ -7,7 +7,7 @@ interface IPlacementVerifier {
         uint[2] memory a,
         uint[2][2] memory b,
         uint[2] memory c,
-        uint[3] memory input
+        uint[4] memory input
     ) external view returns (bool);
 }
 
@@ -23,23 +23,15 @@ interface IMoveVerifier {
 contract zkFischer {
     
     uint public gameKey;
-    uint public phasingPlayer;
+    uint public phasingPlayer = 0;
 
-    uint constant NA = 99;
+    uint constant NA_FILE = 99;
+    uint constant NOCOLOR = 0;
+    uint constant WHITE = 1;
+    uint constant BLACK = 2;
     mapping(string => uint) private pieces;  // values specific to contract
-    mapping(string => uint8[3]) private allowedPieces;  // keys, values from in circuit
-
-    // piece definitions are in `pieces`.
-    uint[8][8] public board = [
-        [19,19,19,19,19,19,19,19],
-        [11,11,11,11,11,11,11,11],
-        [99,99,99,99,99,99,99,99],
-        [99,99,99,99,99,99,99,99],
-        [99,99,99,99,99,99,99,99],
-        [99,99,99,99,99,99,99,99],
-        [ 1, 1, 1, 1, 1, 1, 1, 1],
-        [ 9, 9, 9, 9, 9, 9, 9, 9]
-    ];
+    mapping(uint => uint) private pieceColor;  // see constructor
+    // mapping(string => uint8[3]) private allowedPieces;  // keys, values from in circuit
 
     // keep track of each piece's initial file throughout game.
     uint[8][8] public startingFiles = [
@@ -53,6 +45,18 @@ contract zkFischer {
         [ 0, 1, 2, 3, 4, 5, 6, 7]
     ];
 
+    // compare with constructor
+    uint[8][8] public board = [
+        [19,19,19,19,19,19,19,19],
+        [16,16,16,16,16,16,16,16],
+        [ 0, 0, 0, 0, 0, 0, 0, 0],
+        [ 0, 0, 0, 0, 0, 0, 0, 0],
+        [ 0, 0, 0, 0, 0, 0, 0, 0],
+        [ 0, 0, 0, 0, 0, 0, 0, 0],
+        [ 6, 6, 6, 6, 6, 6, 6, 6],
+        [ 9, 9, 9, 9, 9, 9, 9, 9]
+    ];
+
     address[2] public players;
     uint[2] public setupHashes;
 
@@ -63,11 +67,11 @@ contract zkFischer {
         Register,
         SetupBoard,
         Playing,
-        Finish
+        Ended
     }
     GamePhase public phase = GamePhase.Register;
     modifier atPhase(GamePhase _phase) {
-        require(phase == _phase, "Invalid call at phase.");
+        require(phase == _phase, "Function can't be called at this game phase.");
         _;
     }
 
@@ -77,8 +81,6 @@ contract zkFischer {
     event SetupBoard(address indexed player);
     event Move(address indexed player);
     event GameEnd(address indexed winner);
-
-    event TE(uint[2] param);
 
     event Initialize();
 
@@ -101,79 +103,94 @@ contract zkFischer {
         pieces['bK'] = 15;
         pieces['bP'] = 16;
         pieces['bZ'] = 19;
+        pieces['NA'] = 0;
+        pieceColor[pieces['wR']] = WHITE;
+        pieceColor[pieces['wN']] = WHITE;
+        pieceColor[pieces['wB']] = WHITE;
+        pieceColor[pieces['wQ']] = WHITE;
+        pieceColor[pieces['wK']] = WHITE;
+        pieceColor[pieces['wP']] = WHITE;
+        pieceColor[pieces['wZ']] = WHITE;
+        pieceColor[pieces['bR']] = BLACK;
+        pieceColor[pieces['bN']] = BLACK;
+        pieceColor[pieces['bB']] = BLACK;
+        pieceColor[pieces['bQ']] = BLACK;
+        pieceColor[pieces['bK']] = BLACK;
+        pieceColor[pieces['bP']] = BLACK;
+        pieceColor[pieces['bZ']] = BLACK;
+
+        // board = [
+        //     [pieces['bZ'],pieces['bZ'],pieces['bZ'],pieces['bZ'],pieces['bZ'],pieces['bZ'],pieces['bZ'],pieces['bZ']],
+        //     [pieces['bP'],pieces['bP'],pieces['bP'],pieces['bP'],pieces['bP'],pieces['bP'],pieces['bP'],pieces['bP']],
+        //     [pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA']],
+        //     [pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA']],
+        //     [pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA']],
+        //     [pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA']],
+        //     [pieces['wP'],pieces['wP'],pieces['wP'],pieces['wP'],pieces['wP'],pieces['wP'],pieces['wP'],pieces['wP']],
+        //     [pieces['wZ'],pieces['wZ'],pieces['wZ'],pieces['wZ'],pieces['wZ'],pieces['wZ'],pieces['wZ'],pieces['wZ']]
+        // ];
 
         // refer to circuits
-        allowedPieces["diag"] = [3, 4, 0];  // diag
-        allowedPieces["orthog"] = [1, 4, 0];  // orthog
-        allowedPieces["knight"] = [2, 0, 0];  // knight
+        // {"R": 1, "N": 2, "B": 3, "Q": 4, "K": 5} with 0 as filler value
+        // allowedPieces["diag"] = [3, 4, 0];  // diag
+        // allowedPieces["orthog"] = [1, 4, 0];  // orthog
+        // allowedPieces["knight"] = [2, 0, 0];  // knight
 
         // TODO
         gameKey = 0;
     }
 
-    function pieceColor(uint x) private pure returns (int) {
-        if (1 <= x && x <= 6 || x == 9) {
-            return 0;
-        } else if (11 <= x && x <= 16 || x == 19) {
-            return 1;
-        } else {
-            return -1;
-        }
-    }
-
-    function register() public { // atPhase(GamePhase.Register) {
-        // uint[2] memory arr = [board[1][0], 9];
-        // emit TE(arr);
-
+    function register() public atPhase(GamePhase.Register) {
         if (players[0] == address(0)) {
             players[0] = msg.sender;
             emit Register(msg.sender);
         } else {
-            require(players[0] != msg.sender, "Player has already registered.");
+            require(players[0] != msg.sender, "Already registered.");
             players[1] = msg.sender;
             emit Register(msg.sender);
+            phase = GamePhase.SetupBoard;
             emit PhaseChange(GamePhase.SetupBoard);
         }
     }
-
 
     // Accepts a ZKP of a valid placement verification circuit call
     function setupBoard(
         uint[2] memory a,
         uint[2][2] memory b,
         uint[2] memory c,
-        uint[3] memory input
-    ) public {  // atPhase(GamePhase.SetupBoard) {
-        require(msg.sender == players[0] || msg.sender == players[1], "Caller is not a registered player.");
-        uint _validSetup = input[0];
-        uint _setupHash = input[1];
-        uint _gameKey = input[2];
-        require(_validSetup == 1, "Proof output doesn't assert that placement is valid.");
-        require(_gameKey == gameKey, "gameKey input incorrect for this game.");
+        uint[4] memory input
+    ) public atPhase(GamePhase.SetupBoard) {
+        require(msg.sender == players[0] || msg.sender == players[1], "Caller not registered.");
+        // input: [isValid, setupHash, kingFile, gameKey]
+        require(input[0] == 1, "Proof output wrong assertion.");
+        require(input[3] == gameKey, "gameKey input incorrect.");
         require(
             IPlacementVerifier(placementVerifier).verifyProof(a, b, c, input),
             "Placement proof verification failed."
         );
 
         if (msg.sender == players[0]) {
-            require(setupHashes[0] == 0, "Player 1 has already called setupBoard.");
-            setupHashes[0] = _setupHash;
+            require(setupHashes[0] == 0, "P1 already setup.");
+            setupHashes[0] = input[1];
+            board[7][input[2]] = pieces['wK'];
             emit SetupBoard(msg.sender);
         } else if (msg.sender == players[1]) {
-            require(setupHashes[1] == 0, "Player 2 has already called setupBoard.");
-            setupHashes[1] = _setupHash;
+            require(setupHashes[1] == 0, "P2 already setup.");
+            setupHashes[1] = input[1];
+            board[0][input[2]] = pieces['bK'];
             emit SetupBoard(msg.sender);
         } else {
-            revert("unexpected error");
+            revert("Unexpected setup error.");
         }
 
         if (setupHashes[0] != 0 && setupHashes[1] != 0) {
+            phase = GamePhase.Playing;
             emit PhaseChange(GamePhase.Playing);
         }
     }
-    
 
-    // Accepts a ZKP of a valid move verification circuit call
+    // Pass move verification circuit proof parameters if you're moving a hidden piece (wZ or bZ).
+    // Otherwise (e..g. if moving pawn), pass dummy inputs which will be ignored (TODO: refactor)
     function move(
         uint[2] memory fromSq,
         uint[2] memory toSq,
@@ -181,134 +198,187 @@ contract zkFischer {
         uint[2][2] memory b,
         uint[2] memory c,
         uint[9] memory input
-    ) public { // atPhase(GamePhase.Playing) {
-        require(msg.sender == players[0] || msg.sender == players[1], "Caller is not a registered player.");
-        uint requiredSetupHash;
-        bool whiteMove;
+    ) public atPhase(GamePhase.Playing) {
+        // input: [isValid, pieceFile[3], requiredHash, allowedPieces[3], gameKey]
+
+        // validate caller
+        uint calculatedRequiredSetupHash;
+        bool isWhiteMove;
         if (msg.sender == players[0]) {
             require(phasingPlayer == 0, "It's not player 1's turn.");
-            requiredSetupHash = setupHashes[0];
-            whiteMove = true;
+            calculatedRequiredSetupHash = setupHashes[0];
+            isWhiteMove = true;
         } else if (msg.sender == players[1]) {
             require(phasingPlayer == 1, "It's not player 2's turn.");
-            requiredSetupHash = setupHashes[0];
-            whiteMove = false;
+            calculatedRequiredSetupHash = setupHashes[1];
+            isWhiteMove = false;
         } else {
-            revert("unexpected error");
+            revert("Caller is not a registered player.");
         }
 
-        // contract parses move and gets correct piecefile and allowed pieces
-        uint expectedPieceFile;
-        uint8[3] memory expectedAllowedPieces;
-        (expectedPieceFile, expectedAllowedPieces) = parseMove(fromSq, toSq, whiteMove);
+        // validate move
+        uint piece = board[fromSq[0]][fromSq[1]];
+        if (piece != pieces['wZ'] && piece != pieces['bZ']) {
+            validateRevealedMove(fromSq, toSq, isWhiteMove);
+        } else {
+            uint8[3] memory calculatedAllowedPieces;
+            calculatedAllowedPieces = validateHiddenMove(fromSq, toSq, isWhiteMove);
         
-        require(1 == input[0], "Proof output doesn't assert that move is valid.");
-        uint _validSetup = input[0];
-        uint _pieceFile = input[1]*4 + input[2]*2 + input[3];  // bin2dec
-        uint _requiredHash = input[4];
-        uint8[3] memory _allowedPieces;
-        for (uint i=0; i<3; i++) {
-            _allowedPieces[i] = uint8(input[5+i]);
+            // validate proof if moving hidden piece
+            uint _pieceFile = input[1]*4 + input[2]*2 + input[3];  // bin2dec
+            uint8[3] memory _allowedPieces;
+            for (uint i=0; i<3; i++) {
+                _allowedPieces[i] = uint8(input[5+i]);
+            }
+            require(input[0] == 1, "Proof output doesn't assert placement is valid.");
+            require(_pieceFile == startingFiles[fromSq[0]][fromSq[1]], "Circuit pieceFile input wrong.");
+            require(input[4] == calculatedRequiredSetupHash, "requiredHash input wrong.");
+            for (uint i=0; i<3; i++) {
+                require(_allowedPieces[i] == calculatedAllowedPieces[i], "Circuit allowedPieces input wrong.");
+            }
+            require(input[8] == gameKey, "gameKey input wrong.");
+            require(
+                IMoveVerifier(moveVerifier).verifyProof(a, b, c, input),
+                "Move proof verification failed."
+            );
         }
-        uint _gameKey = input[8];
-        require(_validSetup == 1, "Proof output doesn't assert that placement is valid.");
-        require(_pieceFile == expectedPieceFile, "Circuit pieceFile input doesn't match expected.");
-        require(_requiredHash == requiredSetupHash, "requiredHash input doesn't match earlier commitment.");
-        for (uint i=0; i<3; i++) {
-            require(_allowedPieces[i] == expectedAllowedPieces[i], "Circuit allowedPieces input doesn't match expected.");
-        }
-        require(_gameKey == gameKey, "gameKey input incorrect for this game.");
-        require(
-            IMoveVerifier(moveVerifier).verifyProof(a, b, c, input),
-            "Move proof verification failed."
-        );
 
+        // check winner
+        bool isWinning = (board[toSq[0]][toSq[1]] == pieces['wK'] || board[toSq[0]][toSq[1]] == pieces['bK']);
+
+        // accept move
+        board[toSq[0]][toSq[1]] = board[fromSq[0]][fromSq[1]];
+        board[fromSq[0]][fromSq[1]] = pieces['NA'];
+        startingFiles[toSq[0]][toSq[1]] = startingFiles[fromSq[0]][fromSq[1]];
+        startingFiles[fromSq[0]][fromSq[1]] = NA_FILE;
         phasingPlayer = phasingPlayer == 0 ? 1 : 0;
         emit Move(msg.sender);
+
+        // end game
+        if (isWinning) {
+            phase = GamePhase.Ended;
+            emit GameEnd(msg.sender);
+        }
     }
 
-    function parseMove(uint[2] memory fromSq, uint[2] memory toSq, bool whiteMove) public returns (uint, uint8[3] memory) {
-        require(0 <= fromSq[0] &&
-                0 <= fromSq[1] &&
-                fromSq[0] < 8 &&
-                fromSq[1] < 8, "Out of bounds fromSq.");
-        require(0 <= toSq[0] &&
-                0 <= toSq[1] &&
-                toSq[0] < 8 &&
-                toSq[1] < 8, "Out of bounds toSq.");
-        require(fromSq[0] != toSq[0] || fromSq[1] != toSq[1], "fromSq same as toSq.");
+    function validateRevealedMove(uint[2] memory fromSq, uint[2] memory toSq, bool isWhiteMove) private view {
+        validateMoveCommon(fromSq, toSq, isWhiteMove);
 
-        int fromColor = pieceColor(board[fromSq[0]][fromSq[1]]);
-        int toColor = pieceColor(board[toSq[0]][toSq[1]]);
-        require(fromColor != -1, "No piece at fromSq.");
-        require(whiteMove ? fromColor == 0 : fromColor == 1, "Square doesn't contain correctly colored piece.");
-        require(whiteMove ? toColor != 0 : toColor != 1, "toSq contains own piece.");
+        uint piece = board[fromSq[0]][fromSq[1]];
+        int dr = int(toSq[0]) - int(fromSq[0]);
+        int dc = int(toSq[1]) - int(fromSq[1]);
 
-        // TODO: handle pawn moves
+        // TODO: impl pawn promotions, en passant
+        if (piece == pieces['wK'] || piece == pieces['bK']) {
+            require(abs(dr) <= 1 && abs(dc) <= 1, "Invalid king move.");
+        } else if (piece == pieces['wP'] || piece == pieces['bP']) {
+            if (abs(dc) == 1) {
+                // capture
+                if (isWhiteMove) {
+                    require(dr == -1, "Invalid pawn move.");
+                    require(pieceColor[board[toSq[0]][toSq[1]]] == BLACK, "Invalid pawn capture (no en passant yet).");
+                } else {
+                    require(dr == 1, "Invalid pawn move.");
+                    require(pieceColor[board[toSq[0]][toSq[1]]] == WHITE, "Invalid pawn capture (no en passant yet).");
+                }                
+            } else if (dc == 0) {
+                // move fwd
+                int expectedRowChange = isWhiteMove ? -1 : int(1);
+                uint startingPawnRank = isWhiteMove ? 6 : 1;
+                if (dr == 2*expectedRowChange) {
+                    // starting pawn move
+                    require(fromSq[0] == startingPawnRank, "Pawn can only move 2 spaces from starting position.");
+                    require(board[uint(int(fromSq[0])+1*expectedRowChange)][fromSq[1]] == pieces['NA'], "Piece in pawn path.");
+                    require(board[uint(int(fromSq[0])+2*expectedRowChange)][fromSq[1]] == pieces['NA'], "Piece in pawn path.");
+                } else {
+                    require(dr == expectedRowChange, "Invalid pawn move.");
+                    require(board[uint(int(fromSq[0])+1*expectedRowChange)][fromSq[1]] == pieces['NA'], "Piece in pawn path.");
+                }
+            } else {
+                revert("Invalid pawn move.");
+            }
+        } else {
+            revert("Unsupported piece.");
+        }
+    }
 
-        int dr = abs(int(toSq[0]) - int(fromSq[0]));
-        int dc = abs(int(toSq[1]) - int(fromSq[1]));
+    function validateHiddenMove(uint[2] memory fromSq, uint[2] memory toSq, bool isWhiteMove) private view returns (uint8[3] memory) {
+        validateMoveCommon(fromSq, toSq, isWhiteMove);
+
+        int dr = int(toSq[0]) - int(fromSq[0]);
+        int dc = int(toSq[1]) - int(fromSq[1]);
+        uint adr = abs(dr);
+        uint adc = abs(dc);
 
         // {0: diag, 1: orthog, 2: knight, 3: 1space (unused)}
         uint moveType;
         uint8[3] memory _allowedPieces;
-        if (dr == 1 && dc == 2 || dr == 2 && dc == 1) {
+        
+        if (adr == 1 && adc == 2 || adr == 2 && adc == 1) {
             moveType = 2;
-            _allowedPieces = allowedPieces["knight"];
+            // allowedPieces["knight"] = [2, 0, 0];  // knight
+            _allowedPieces = [2, 0, 0];
         // } else if (dr <= 1 && dc <= 1) {
         //     moveType = 3;
-        } else if (dr == 0 || dc == 0) {
+        } else if (adr == 0 || adc == 0) {
             moveType = 1;
-            _allowedPieces = allowedPieces["orthog"];
-        } else if (dr == dc) {
+            // allowedPieces["orthog"] = [1, 4, 0];  // orthog
+            _allowedPieces = [1, 4, 0];
+        } else if (adr == adc) {
             moveType = 0;
-            _allowedPieces = allowedPieces["diag"];
+            // allowedPieces["diag"] = [3, 4, 0];  // diag
+            _allowedPieces = [3, 4, 0];
         } else {
             revert("Invalid move");
         }
 
-        // can't move through pieces unless knight
-        if (moveType != 2) {
-            uint minr;
-            uint maxr;
-            uint minc;
-            uint maxc;
-            if (fromSq[0] <= toSq[0]) {
-                minr = fromSq[0];
-                maxr = toSq[0];
-            } else {
-                minr = toSq[0];
-                maxr = fromSq[0];
-            }
-            if (fromSq[1] <= toSq[1]) {
-                minc = fromSq[1];
-                maxc = toSq[1];
-            } else {
-                minc = toSq[1];
-                maxc = fromSq[1];
-            }
-
-            for (uint i = minr; i <= maxr; i++) {
-                for (uint j = minc; j <= maxc; j++) {
-                    if (board[i][j] != NA) {
-                        if (i != minr && j != minc) {
-                            revert("Can't move through pieces as non-knight.");
-                        }
-                    }
-                }
-            }
+        // knight moves at this point don't need more checks
+        if (moveType == 2) {
+            return _allowedPieces;
         }
 
-        // todo: check game end
-
-        // accept move
-        uint startingFile = startingFiles[fromSq[0]][fromSq[1]];
-        board[toSq[0]][toSq[1]] = board[fromSq[0]][fromSq[1]];
-        startingFiles[toSq[0]][toSq[1]] = startingFile;
-        return (startingFile, _allowedPieces);
+        // check for invalid movement through pieces
+        assert(adr == adc || adr == 0 || adc == 0);
+        int rStep = sign(dr);
+        int cStep = sign(dc);
+    
+        // iterate over path excluding endpoints
+        for (int i=1; i < int(max(adr, adc)); i++) {
+            require(
+                board[uint(int(fromSq[0]) + rStep*i)][uint(int(fromSq[1]) + cStep*i)] == pieces['NA'],
+                "Can't move through pieces as non-knight."
+            );
+        }
+        return _allowedPieces;
     }
 
-    function abs(int x) private pure returns (int) {
-        return x >= 0 ? x : -x;
+    function validateMoveCommon(uint[2] memory fromSq, uint[2] memory toSq, bool isWhiteMove) private view {
+        require(0 <= fromSq[0] &&
+                0 <= fromSq[1] &&
+                fromSq[0] < 8 &&
+                fromSq[1] < 8, "OOB fromSq.");
+        require(0 <= toSq[0] &&
+                0 <= toSq[1] &&
+                toSq[0] < 8 &&
+                toSq[1] < 8, "OOB toSq.");
+        require(fromSq[0] != toSq[0] || fromSq[1] != toSq[1], "fromSq same as toSq.");
+
+        uint fromColor = pieceColor[board[fromSq[0]][fromSq[1]]];
+        uint toColor = pieceColor[board[toSq[0]][toSq[1]]];
+        require(fromColor != NOCOLOR, "No piece at fromSq.");
+        require(isWhiteMove ? fromColor == WHITE : fromColor == BLACK, "fromSq doesn't contain own piece.");
+        require(isWhiteMove ? toColor != WHITE : toColor != BLACK, "toSq contains own piece.");
+    }
+
+    function abs(int x) private pure returns (uint) {
+        return x >= 0 ? uint(x) : uint(-x);
+    }
+
+    function sign(int x) private pure returns (int) {
+        return x == 0 ? int(0) : (x > 0 ? int(1) : -1);
+    }
+
+    function max(uint a, uint b) private pure returns (uint) {
+        return a > b ? a : b;
     }
 }

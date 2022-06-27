@@ -134,7 +134,7 @@ describe("verifyPlacement verifier contract test", function () {
         let a = [0, 0];
         let b = [[0, 0], [0, 0]];
         let c = [0, 0];
-        let d = [0, 0, 0];
+        let d = [0, 0, 0, 0];
         expect(await verifier.verifyProof(a, b, c, d)).to.be.false;
     });
 });

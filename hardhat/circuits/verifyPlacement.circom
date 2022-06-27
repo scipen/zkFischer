@@ -178,4 +178,4 @@ template VerifyPlacement() {
     ok <== hashesEqual.out;
 }
 
-component main {public [setupHash, gameKey]} = VerifyPlacement();
+component main {public [setupHash, kingFile, gameKey]} = VerifyPlacement();

@@ -34,8 +34,8 @@ const DUMMY_MOVE_ARGS = [
 ];
 
 function sqToCoords(file, rank) {
-    row = 7-rank + 1;
-    col = {
+    let row = 7-rank + 1;
+    let col = {
         'a': 0,
         'b': 1,
         'c': 2,

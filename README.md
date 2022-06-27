@@ -12,7 +12,7 @@ deploying "VerifyPlacementVerifier" (tx: 0xb7d69c0c88e3115e80a4cc49137c163518e1d
 
 deploying "VerifyMoveVerifier" (tx: 0x7d5a992db1311a559fa09ba7a402ad065f711637f99838edd0f54a5ae789cf3b)...: deployed at 0x052Cc560E7B50DE11F754d2fe20A6857bedC8ceF with 2214845 gas
 
-deploying "zkFischer" (tx: 0x9adef364ec1983e0de71a419e510def451ff39113dd3f6ae861befeb88f50e80)...: deployed at 0xE84CB61DeAfBb965A6d99Def08750a2c43130Ab7 with 6599672 gas
+deploying "zkFischer" (tx: 0x723b4acc6e2381a74d65c448d9754241cbf3f726bced7a0348ab8af596d3af6a)...: deployed at 0x0530f1E594931d8F33E4718fFB0909635D6c02b8 with 6677820 gas
 ```
 
 Boilerplate sources:
@@ -34,7 +34,7 @@ zkFischer uses two circuits: `verifyPlacement` and `verifyMove` (both in `hardha
 
 When a player initially sets up their board, they must send the contract a ZKP using `verifyPlacement` to prove that their setup is valid (2 rooks, 2 knights, etc). Their hashed board setup is committed to the contract.
 
-During gameplay, the contract keep track of which squares are occupied by revealed pieces (i.e. pawn or king) and which are occupied by hidden ones. When a player moves a hidden piece, they must send the contract a ZKP using `verifyMove` showing that this piece's starting location (public info) is consistent with the type of move it tried to make (e.g. diagonal implies bishop or queen) and the owner's committed board setup hash.
+During gameplay, the contract keeps track of which squares are occupied by revealed pieces (i.e. pawn or king) and which are occupied by hidden ones. When a player moves a hidden piece, they must send the contract a ZKP using `verifyMove` showing that this piece's starting location (public info from game history) is consistent with the type of move it tried to make (e.g. diagonal implies bishop or queen) and the owner's committed board setup hash.
 
 Both circuits include a public `gameKey` input and private `boardSetupKey` input to thwart rainbow attacks.
 

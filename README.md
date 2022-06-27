@@ -4,6 +4,8 @@ In this variant, you start by rearranging your back rank however you want. All p
 
 Currently, there is no pawn promotion or en passant due to hitting contract bytecode size limitations. There is also no castling, 3-fold repetition, or 50 move rule. It is legal to move your king into check.
 
+Play here: [https://zk-fischer.vercel.app/](https://zk-fischer.vercel.app/) (only one active game at a time, globally)
+
 Harmony devnet:
 ```
 deploying "VerifyPlacementVerifier" (tx: 0xb7d69c0c88e3115e80a4cc49137c163518e1d89f86bc7d1fe10a1506f091e1a3)...: deployed at 0xa414216B4350be4F268DC5Ce85b4DfbD6342c2C1 with 2045633 gas

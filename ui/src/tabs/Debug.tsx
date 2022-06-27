@@ -30,7 +30,7 @@ export default function Debug() {
         "gameKey": 0,
         "boardSetup": [1, 2, 3, 4, 5, 3, 2, 1],
         "boardSetupKey": 1000
-    })
+    });
 
     const moveDefaultInput = JSON.stringify({
         "fromSq": [7,1],
@@ -41,7 +41,7 @@ export default function Debug() {
         "gameKey": 0,
         "boardSetup": [1, 2, 3, 4, 5, 3, 2, 1],
         "boardSetupKey": 1000
-    })
+    });
 
     useEffect(() => {
         setSubmitSetupInput(setupDefaultInput);

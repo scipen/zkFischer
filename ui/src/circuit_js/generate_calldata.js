@@ -8,14 +8,9 @@ const Fr = new F1Field(Scalar.fromString("21888242871839275222246405745257275088
 
 export async function generateCalldata(input, zkeyFile, wasmFile) {
 
-    // TODO, Fr.e(0)
-    console.log(input);
+    // TODO, consider Fr.e(x)
     let formattedInput = input;
     let generateWitnessSuccess = true;
-
-    // for (var key in input) {
-    //     formattedInput[key] = Fr.e(input[key]);
-    // }
 
     let witness = await generateWitness(formattedInput, wasmFile).then()
         .catch((error) => {

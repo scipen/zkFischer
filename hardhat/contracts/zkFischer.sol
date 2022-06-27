@@ -23,7 +23,7 @@ interface IMoveVerifier {
 contract zkFischer {
     
     uint public gameKey;
-    uint public phasingPlayer = 0;
+    uint public phasingPlayer;
 
     uint constant NA_FILE = 99;
     uint constant NOCOLOR = 0;
@@ -34,28 +34,10 @@ contract zkFischer {
     // mapping(string => uint8[3]) private allowedPieces;  // keys, values from in circuit
 
     // keep track of each piece's initial file throughout game.
-    uint[8][8] public startingFiles = [
-        [ 0, 1, 2, 3, 4, 5, 6, 7],
-        [ 0, 1, 2, 3, 4, 5, 6, 7],
-        [99,99,99,99,99,99,99,99],
-        [99,99,99,99,99,99,99,99],
-        [99,99,99,99,99,99,99,99],
-        [99,99,99,99,99,99,99,99],
-        [ 0, 1, 2, 3, 4, 5, 6, 7],
-        [ 0, 1, 2, 3, 4, 5, 6, 7]
-    ];
+    uint[8][8] public startingFiles;
 
-    // compare with constructor
-    uint[8][8] public board = [
-        [19,19,19,19,19,19,19,19],
-        [16,16,16,16,16,16,16,16],
-        [ 0, 0, 0, 0, 0, 0, 0, 0],
-        [ 0, 0, 0, 0, 0, 0, 0, 0],
-        [ 0, 0, 0, 0, 0, 0, 0, 0],
-        [ 0, 0, 0, 0, 0, 0, 0, 0],
-        [ 6, 6, 6, 6, 6, 6, 6, 6],
-        [ 9, 9, 9, 9, 9, 9, 9, 9]
-    ];
+    // see constructor
+    uint[8][8] public board;
 
     address[2] public players;
     uint[2] public setupHashes;
@@ -87,7 +69,7 @@ contract zkFischer {
     constructor(address _placementVerifier, address _moveVerifier) {
         placementVerifier = _placementVerifier;
         moveVerifier = _moveVerifier;
-        
+
         // Z corresponds to unknown piece
         pieces['wR'] = 1;
         pieces['wN'] = 2;
@@ -118,17 +100,46 @@ contract zkFischer {
         pieceColor[pieces['bK']] = BLACK;
         pieceColor[pieces['bP']] = BLACK;
         pieceColor[pieces['bZ']] = BLACK;
+        resetGame();
+    }
 
-        // board = [
-        //     [pieces['bZ'],pieces['bZ'],pieces['bZ'],pieces['bZ'],pieces['bZ'],pieces['bZ'],pieces['bZ'],pieces['bZ']],
-        //     [pieces['bP'],pieces['bP'],pieces['bP'],pieces['bP'],pieces['bP'],pieces['bP'],pieces['bP'],pieces['bP']],
-        //     [pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA']],
-        //     [pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA']],
-        //     [pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA']],
-        //     [pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA']],
-        //     [pieces['wP'],pieces['wP'],pieces['wP'],pieces['wP'],pieces['wP'],pieces['wP'],pieces['wP'],pieces['wP']],
-        //     [pieces['wZ'],pieces['wZ'],pieces['wZ'],pieces['wZ'],pieces['wZ'],pieces['wZ'],pieces['wZ'],pieces['wZ']]
-        // ];
+    function resetGame() public {
+        phasingPlayer = 0;
+        players = [0x0000000000000000000000000000000000000000, 0x0000000000000000000000000000000000000000];
+        setupHashes = [0, 0];
+
+        startingFiles = [
+            [ 0, 1, 2, 3, 4, 5, 6, 7],
+            [ 0, 1, 2, 3, 4, 5, 6, 7],
+            [99,99,99,99,99,99,99,99],
+            [99,99,99,99,99,99,99,99],
+            [99,99,99,99,99,99,99,99],
+            [99,99,99,99,99,99,99,99],
+            [ 0, 1, 2, 3, 4, 5, 6, 7],
+            [ 0, 1, 2, 3, 4, 5, 6, 7]
+        ];
+
+        board = [
+            [19,19,19,19,19,19,19,19],
+            [16,16,16,16,16,16,16,16],
+            [ 0, 0, 0, 0, 0, 0, 0, 0],
+            [ 0, 0, 0, 0, 0, 0, 0, 0],
+            [ 0, 0, 0, 0, 0, 0, 0, 0],
+            [ 0, 0, 0, 0, 0, 0, 0, 0],
+            [ 6, 6, 6, 6, 6, 6, 6, 6],
+            [ 9, 9, 9, 9, 9, 9, 9, 9]
+        ];
+
+        board = [
+            [pieces['bZ'],pieces['bZ'],pieces['bZ'],pieces['bZ'],pieces['bZ'],pieces['bZ'],pieces['bZ'],pieces['bZ']],
+            [pieces['bP'],pieces['bP'],pieces['bP'],pieces['bP'],pieces['bP'],pieces['bP'],pieces['bP'],pieces['bP']],
+            [pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA']],
+            [pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA']],
+            [pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA']],
+            [pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA'],pieces['NA']],
+            [pieces['wP'],pieces['wP'],pieces['wP'],pieces['wP'],pieces['wP'],pieces['wP'],pieces['wP'],pieces['wP']],
+            [pieces['wZ'],pieces['wZ'],pieces['wZ'],pieces['wZ'],pieces['wZ'],pieces['wZ'],pieces['wZ'],pieces['wZ']]
+        ];
 
         // refer to circuits
         // {"R": 1, "N": 2, "B": 3, "Q": 4, "K": 5} with 0 as filler value
@@ -138,6 +149,8 @@ contract zkFischer {
 
         // TODO
         gameKey = 0;
+
+        emit Initialize();
     }
 
     function register() public atPhase(GamePhase.Register) {
@@ -258,6 +271,7 @@ contract zkFischer {
         if (isWinning) {
             phase = GamePhase.Ended;
             emit GameEnd(msg.sender);
+            resetGame();
         }
     }
 

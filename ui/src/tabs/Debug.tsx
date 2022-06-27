@@ -3,6 +3,7 @@ import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import Alert from "@mui/material/Alert";
+import Typography from "@mui/material/Typography";
 import * as contract from "../contract";
 import Loading from "./components/Loading";
 
@@ -21,6 +22,31 @@ export default function Debug() {
     const [Registering, setRegistering] = useState(false);
     const [SubmittingSetup, setSubmittingSetup] = useState(false);
     const [SubmittingMove, setSubmittingMove] = useState(false);
+    const [ResettingGame, setResettingGame] = useState(false);
+
+    const setupDefaultInput = JSON.stringify({
+        "setupHash": "16362932092467779236188667745398721008062465179344094948620141050502887252044",
+        "kingFile": 4,
+        "gameKey": 0,
+        "boardSetup": [1, 2, 3, 4, 5, 3, 2, 1],
+        "boardSetupKey": 1000
+    })
+
+    const moveDefaultInput = JSON.stringify({
+        "fromSq": [7,1],
+        "toSq": [5,0],
+        "pieceFile": [0, 0, 1],
+        "requiredHash": "16362932092467779236188667745398721008062465179344094948620141050502887252044",
+        "allowedPieces": [2, 0, 0],
+        "gameKey": 0,
+        "boardSetup": [1, 2, 3, 4, 5, 3, 2, 1],
+        "boardSetupKey": 1000
+    })
+
+    useEffect(() => {
+        setSubmitSetupInput(setupDefaultInput);
+        setSubmitMoveInput(moveDefaultInput);
+     }, []);
 
     const register = async (event: any) => {
         event.preventDefault();
@@ -39,12 +65,6 @@ export default function Debug() {
                 setRegistering(false);
             });
         
-        // setRegisterOutput(await contract.register()
-        //     .catch((error: any) => {
-        //         setErrorMsg(error.toString());
-        //         setError(true);
-        //         setRegistering(false);
-        //     }));
         setRegistering(false);
         event.preventDefault();
     }
@@ -66,12 +86,6 @@ export default function Debug() {
                 setSubmittingSetup(false);
             });
 
-        // setSubmitSetupOutput(await contract.submitSetup(submitSetupInput)
-        //     .catch((error: any) => {
-        //         setErrorMsg(error.toString());
-        //         setError(true);
-        //         setSubmittingSetup(false);
-        //     }));
         setSubmittingSetup(false);
         event.preventDefault();
     }
@@ -93,13 +107,28 @@ export default function Debug() {
                 setSubmittingMove(false);
             });
 
-        // setSubmitMoveOutput(await contract.submitMove(submitMoveInput)
-        //     .catch((error: any) => {
-        //         setErrorMsg(error.toString());
-        //         setError(true);
-        //         setSubmittingMove(false);
-        //     }));
         setSubmittingMove(false);
+        event.preventDefault();
+    }
+
+    const resetGame = async (event: any) => {
+        event.preventDefault();
+        setError(false);
+        setCallOutput(false);
+
+        setResettingGame(true);
+        await contract.resetGame().then(
+            (value: any) => {
+                setCallOutputMsg(value);
+                setCallOutput(true);
+            },
+            (error: any) => {
+                setErrorMsg(error.toString());
+                setError(true);
+                setResettingGame(false);
+            });
+
+            setResettingGame(false);
         event.preventDefault();
     }
 
@@ -139,23 +168,19 @@ export default function Debug() {
             autoComplete="off"
             textAlign="center"
         >
+            <Typography>You can call game backend functions here.</Typography>
+            <Typography>Outputs render at the bottom of the page.</Typography><br />
             <Button
                 onClick={register}
                 variant="contained">
                 Register
-            </Button>
+            </Button><br /><br />
             <TextField
                 id="input-submitSetup"
                 label="submitSetup"
                 type="text"
                 multiline
-                defaultValue='{
-                    "setupHash": "16362932092467779236188667745398721008062465179344094948620141050502887252044",
-                    "kingFile": 4,
-                    "gameKey": 0,
-                    "boardSetup": [1, 2, 3, 4, 5, 3, 2, 1],
-                    "boardSetupKey": 1000
-                }'
+                defaultValue={setupDefaultInput}
                 minRows={10}
                 InputLabelProps={{
                     shrink: true,
@@ -164,27 +189,18 @@ export default function Debug() {
                 onKeyDown={keyHandler}
                 onChange={submitSetupHandler}
                 onKeyPress={enterHandler}
-            /><br />
+            />
             <Button
                 onClick={submitSetup}
                 variant="contained">
                 Submit Setup
-            </Button>
+            </Button><br /><br />
             <TextField
                 id="input-submitMove"
                 label="submitMove"
                 type="text"
                 multiline
-                defaultValue='{
-                    "fromSq": [7,1],
-                    "toSq": [5,0],
-                    "pieceFile": [0, 0, 1],
-                    "requiredHash": "16362932092467779236188667745398721008062465179344094948620141050502887252044",
-                    "allowedPieces": [2, 0, 0],
-                    "gameKey": 0,
-                    "boardSetup": [1, 2, 3, 4, 5, 3, 2, 1],
-                    "boardSetupKey": 1000
-                }'
+                defaultValue={moveDefaultInput}
                 minRows={10}
                 InputLabelProps={{
                     shrink: true,
@@ -198,11 +214,17 @@ export default function Debug() {
                 onClick={submitMove}
                 variant="contained">
                 Submit Move
+            </Button><br /><br />
+            <Button
+                onClick={resetGame}
+                variant="contained">
+                Reset Game
             </Button>
             <br /><br />
             {Registering ? <Loading text="Registering..." /> : <div />}
             {SubmittingSetup ? <Loading text="Submitting setup..." /> : <div />}
             {SubmittingMove ? <Loading text="Submitting move..." /> : <div />}
+            {ResettingGame ? <Loading text="Resetting game..." /> : <div />}
             {error ? <Alert severity="error" sx={{ textAlign: "left" }}>{errorMsg}</Alert> : <div />}
             {callOutput ? <Alert severity="success" sx={{ textAlign: "left" }}>{callOutputMsg}</Alert> : <div />}
         </Box>

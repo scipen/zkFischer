@@ -50,6 +50,7 @@ export default function Play() {
                 e4: 'wK', e5: 'bK'
             }} sparePieces getPosition={getPos} />
             
+            <br />
             <Button
                 onClick={submitSetup}
                 variant="contained">

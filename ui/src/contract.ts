@@ -14,7 +14,7 @@ export async function connectContract() {
     console.log('signer: ', await signer.getAddress());
 
     gameContract = new ethers.Contract(address['zkFischer'], zkFischer.abi, signer);
-    console.log("Connect to Game Contract:", zkFischer);
+    console.log("Connected to Game Contract:", zkFischer);
 }
 
 export async function register() {
@@ -85,5 +85,16 @@ export async function submitMove(input: any) {
     }
     else {
         throw "Witness generation failed.";
+    }
+}
+
+export async function resetGame() {
+    await connectContract();
+
+    try {
+        await gameContract.resetGame();
+        return "Game reset.";
+    } catch(error) {
+        throw JSON.stringify(error);
     }
 }

@@ -14,3 +14,7 @@ deploying "VerifyMoveVerifier" (tx: 0x7d5a992db1311a559fa09ba7a402ad065f711637f9
 
 deploying "zkFischer" (tx: 0x9adef364ec1983e0de71a419e510def451ff39113dd3f6ae861befeb88f50e80)...: deployed at 0xE84CB61DeAfBb965A6d99Def08750a2c43130Ab7 with 6599672 gas
 ```
+
+Boilerplate sources:
+* https://github.com/socathie/zkApp/
+* https://github.com/enu-kuro/zku-final-project/

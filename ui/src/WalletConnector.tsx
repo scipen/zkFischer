@@ -2,7 +2,8 @@ import Fab from '@mui/material/Fab';
 import Backdrop from '@mui/material/Backdrop';
 import { useEffect, useState } from 'react';
 
-const testnetChainId = '0x539'
+// const devnetChainId = '0x539'
+const devnetChainId = '0x635ae020'
 // const testnetChainId = '0x6357d2e0'
 
 export default function WalletConnector() {
@@ -50,18 +51,18 @@ export default function WalletConnector() {
     let chainId = await ethereum.request({ method: 'eth_chainId' });
     console.log("Chain ID:", chainId, parseInt(chainId));
 
-    setCorrectChain(chainId === testnetChainId);
+    setCorrectChain(chainId === devnetChainId);
   }
 
   const changeChainId = async () => {
     let chainId = await ethereum.request({ method: 'eth_chainId' });
 
-    if (chainId !== testnetChainId) {
+    if (chainId !== devnetChainId) {
       try {
         await ethereum.request({
           method: 'wallet_switchEthereumChain',
           params: [{
-            chainId: testnetChainId
+            chainId: devnetChainId
           }], // chainId must be in hexadecimal numbers
         });
         chainId = await ethereum.request({ method: 'eth_chainId' });
@@ -74,7 +75,7 @@ export default function WalletConnector() {
               method: 'wallet_addEthereumChain',
               params: [
                 {
-                  chainId: testnetChainId,
+                  chainId: devnetChainId,
                   chainName: 'Harmony Testnet',
                   nativeCurrency: {
                     name: 'ONE',
@@ -94,7 +95,7 @@ export default function WalletConnector() {
       }
       window.location.reload();
     }
-    setCorrectChain(chainId === testnetChainId);
+    setCorrectChain(chainId === devnetChainId);
   }
 
   const changeAccount = async () => {

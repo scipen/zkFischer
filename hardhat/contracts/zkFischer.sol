@@ -159,6 +159,7 @@ contract zkFischer {
 
         // TODO
         gameKey = 0;
+        phase = GamePhase.Register;
         emit Initialize();
     }
 
@@ -286,7 +287,6 @@ contract zkFischer {
         if (isWinning) {
             phase = GamePhase.Ended;
             emit GameEnd(msg.sender);
-            resetGame();
         }
     }
 

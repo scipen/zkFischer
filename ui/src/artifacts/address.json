@@ -1,5 +1,8 @@
 {
     "VerifyPlacementVerifier": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
     "VerifyMoveVerifier": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
-    "zkFischer": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"
+    "zkFischer": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+    "devnet_VerifyPlacementVerifier": "0xa414216B4350be4F268DC5Ce85b4DfbD6342c2C1",
+    "devnet_VerifyMoveVerifier": "0x052Cc560E7B50DE11F754d2fe20A6857bedC8ceF",
+    "devnet_zkFischer": "0xE84CB61DeAfBb965A6d99Def08750a2c43130Ab7"
 }

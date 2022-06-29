@@ -717,5 +717,60 @@ export default {
         />
       </g>
     </svg>
+  ),
+  wZ: (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      version="1.1"
+      width="45"
+      height="45"
+    >
+      <g
+        style={{
+            opacity: '1',
+            fill: '#ffffff',
+            fillOpacity: '1',
+            fillRule: 'evenodd',
+            stroke: '#000000',
+            strokeWidth: '1.5',
+            strokeLinecap: 'round',
+            strokeLinejoin: 'round',
+            strokeMiterlimit: '4',
+            strokeDasharray: 'none',
+            strokeOpacity: '1'
+          }}>
+        <path
+            d="M 22,9 C 15.758319,8.9246052 13.62602,14.236945 11.495559,18.552841 8.9795597,24.237079 9.6364387,32.917707 10.5,39.5 h 23 C 34.171296,32.866934 33.056477,22.255816 32.281973,17.996668 31.47899,13.165579 29.117814,8.7127476 22,9 Z"
+            style={{
+                strokeLinecap: 'butt'
+            }}
+        />
+      </g>
+    </svg>
+  ),
+  bZ: (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      version="1.1"
+      width="45"
+      height="45"
+    >
+        <path
+            d="M 22,9 C 15.758319,8.9246052 13.62602,14.236945 11.495559,18.552841 8.9795597,24.237079 9.6364387,32.917707 10.5,39.5 h 23 C 34.171296,32.866934 33.056477,22.255816 32.281973,17.996668 31.47899,13.165579 29.117814,8.7127476 22,9 Z"
+            style={{
+                opacity: '1',
+                fill: '#000000',
+                fillOpacity: '1',
+                fillRule: 'nonzero',
+                stroke: '#000000',
+                strokeWidth: '1.5',
+                strokeLinecap: 'round',
+                strokeLinejoin: 'miter',
+                strokeMiterlimit: '4',
+                strokeDasharray: 'none',
+                strokeOpacity: '1'
+              }}
+        />
+    </svg>
   )
 };

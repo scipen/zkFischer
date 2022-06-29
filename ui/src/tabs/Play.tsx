@@ -7,7 +7,9 @@ import Typography from "@mui/material/Typography";
 import * as contract from "../contract";
 import Loading from "./components/Loading";
 import ReactMarkdown from 'react-markdown';
-import Chessboard from 'chessboardjsx';
+// import Chessboard from 'chessboardjsx';
+import Chessboard from '../deps/chessboardjsx/Chessboard';
+import Game from "./components/Game";
 
 export default function Play() {
 
@@ -19,7 +21,7 @@ You can use the debug tab if the chessboard UI is broken.
 2. Drag back rank to desired setup. Click "submit setup".
     * UI might be flaky, if you make a mistake try refreshing.
     * On success, you should see your private board setup commitment at the bottom of screen. Save this and put it in boardSetupInput
-3. Hidden pieces will show up as queens (pending working dependency patch + custom svg).
+3. ~~Hidden pieces will show up as queens (pending working dependency patch + custom svg).~~ update: they now show up as blobs
 3. When both players have set up, click "Read Board" to manually pull the game state from on-chain.
 4. Make a move. Click "submit move".
 5. You won't be notified when your opponent makes a move. So click "Read Board" again when it's your turn.
@@ -211,6 +213,7 @@ Obviously a bad UX for now!
                 Register
             </Button><br /><br />
             <Chessboard position={position} sparePieces getPosition={getPos} />
+            {/* <Game position={position} getPosition={getPos}/> */}
             <TextField
                 id="input-boardSetupKey"
                 label="boardSetupKey"

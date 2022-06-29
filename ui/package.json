@@ -15,8 +15,6 @@
     "@testing-library/user-event": "^13.5.0",
     "@types/jest": "^27.4.0",
     "@types/node": "^16.11.22",
-    "@types/react": "^17.0.39",
-    "@types/react-dom": "^17.0.11",
     "assert": "^2.0.0",
     "babel-jest": "^27.4.2",
     "babel-loader": "^8.2.3",
@@ -28,13 +26,11 @@
     "buffer": "^6.0.3",
     "camelcase": "^6.2.1",
     "case-sensitive-paths-webpack-plugin": "^2.4.0",
-    "cgx": "file:../../cgx",
     "chessboardjsx": "^2.4.7",
     "circomlib": "^2.0.2",
     "circomlib-matrix": "^1.0.1",
     "circomlib-ml": "^1.1.0",
     "circomlibjs": "^0.1.1",
-    "cnx": "file:../../cnx",
     "constants-browserify": "^1.0.0",
     "crypto-browserify": "^3.12.0",
     "css-loader": "^6.5.1",
@@ -172,6 +168,8 @@
     ]
   },
   "devDependencies": {
+    "@types/react": "^17.0.47",
+    "@types/react-dom": "^18.0.5",
     "process": "^0.11.10",
     "react-dev-utils": "^12.0.1",
     "react-error-overlay": "^6.0.10"

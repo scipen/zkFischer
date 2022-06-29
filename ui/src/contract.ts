@@ -62,14 +62,14 @@ const int_to_pc = {
     4: 'wQ',
     5: 'wK',
     6: 'wP',
-    9: 'wQ',  // override wZ
+    9: 'wZ',
     11: 'bR',
     12: 'bN',
     13: 'bB',
     14: 'bQ',
     15: 'bK',
     16: 'bP',
-    19: 'bQ', // override bZ
+    19: 'bZ',
 };
 
 export async function playerId() {
@@ -349,11 +349,11 @@ export async function submitSetup(input: any) {
 export async function submitMove(input: any) {
     await connectContract();
     input = JSON.parse(input);
+    console.log(JSON.stringify(input));
     let fromSq = input["fromSq"];
     let toSq = input["toSq"];
     delete input["fromSq"]; 
     delete input["toSq"];
-    console.log(input);
 
     if (typeof(input["boardSetup"]) == 'string') {
         input["boardSetup"] = JSON.parse(input["boardSetup"]);

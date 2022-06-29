@@ -1,0 +1,5 @@
+inkscape -w 16 -h 16 -e 16.png ghost.svg
+...
+
+convert 16.png 32.png 48.png icon.ico
+identify icon.ico

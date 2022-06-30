@@ -11,8 +11,7 @@ export async function generateCalldata(input, zkeyFile, wasmFile) {
     // TODO, consider Fr.e(x)
     let formattedInput = input;
     let generateWitnessSuccess = true;
-    console.log(formattedInput);
-    console.log(Fr.e(formattedInput['requiredHash']));
+    console.log("Input to witness generator: ", formattedInput);
 
     let witness = await generateWitness(formattedInput, wasmFile).then()
         .catch((error) => {

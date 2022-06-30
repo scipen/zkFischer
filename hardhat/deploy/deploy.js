@@ -15,7 +15,8 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     await deploy('zkFischer', {
         from: deployer,
         log: true,
-        args: [verifyPlacementVerifier.address, verifyMoveVerifier.address]
+        args: [verifyPlacementVerifier.address, verifyMoveVerifier.address],
+        contract: 'zkFischer'
     });
 };
 module.exports.tags = ['complete'];

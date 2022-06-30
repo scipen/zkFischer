@@ -16,7 +16,7 @@ export async function connectContract() {
     let signerAddress = await signer.getAddress();
     console.log('signer: ', signerAddress);
 
-    gameContract = new ethers.Contract(address['devnet_zkFischerTest'], zkFischer.abi, signer);
+    gameContract = new ethers.Contract(address['devnet_zkFischer'], zkFischer.abi, signer);
     console.log("Connected to Game Contract:", zkFischer);
     return signerAddress;
 }
@@ -156,17 +156,13 @@ export async function pubSubmitSetup(position: {[key: string]: gameUtils.Piece},
     const poseidonHash = poseidon.F.e(poseidon([...boardSetup, boardSetupKey, gameKey]));
     const setupHash = poseidon.F.toString(poseidonHash, 10);
 
-    let result = await submitSetup(JSON.stringify({
+    return await submitSetup(JSON.stringify({
         "setupHash": setupHash,
         "kingFile": kingFile,
         "gameKey": gameKey,
         "boardSetup": boardSetup,
         "boardSetupKey": boardSetupKey
     }));
-
-    // on page load, populate keys if they're relevant to this game
-    // localStorage.setItem(BOARD_SETUP_INPUT, JSON.stringify(boardSetup));
-    return result;
 }
 
 

@@ -7,7 +7,6 @@ import Typography from "@mui/material/Typography";
 import * as contract from "../contract";
 import Loading from "./components/Loading";
 import ReactMarkdown from 'react-markdown';
-// import Chessboard from 'chessboardjsx';
 import Chessboard from '../deps/chessboardjsx/Chessboard';
 import Game from "./components/Game";
 
@@ -51,7 +50,6 @@ Obviously a bad UX for now!
     const [ReadingBoard, setReadingBoard] = useState(false);
 
     const getPos = async (currentPosition: any) => {
-        console.log(currentPosition);
         setSubmitSetupInput(currentPosition);
         setSubmitMoveInput(currentPosition);
     }
@@ -207,13 +205,14 @@ Obviously a bad UX for now!
             }}
         >
             <ReactMarkdown children={md}/>
+            <Chessboard position={position} sparePieces getPosition={getPos} />
+            {/* <Game position={position} getPosition={getPos}/> */}
+            <br />
             <Button
                 onClick={register}
                 variant="contained">
                 Register
-            </Button><br /><br />
-            <Chessboard position={position} sparePieces getPosition={getPos} />
-            {/* <Game position={position} getPosition={getPos}/> */}
+            </Button>
             <TextField
                 id="input-boardSetupKey"
                 label="boardSetupKey"

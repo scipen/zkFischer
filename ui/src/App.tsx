@@ -1,4 +1,4 @@
-
+import { useState } from 'react';
 import BasicTabs from "./TabPanel";
 import WalletConnector from "./WalletConnector";
 import { createTheme, ThemeProvider } from '@mui/material/styles';
@@ -11,11 +11,12 @@ const darkTheme = createTheme({
 });
 
 export default function App() {
+    const [currentAccount, setCurrentAccount] = useState<string | null>(null);
     return (
         <ThemeProvider theme={darkTheme}>
             <CssBaseline />
-            <BasicTabs />
-            <WalletConnector />
+            <BasicTabs currentAccount={currentAccount} />
+            <WalletConnector currentAccount={currentAccount} setCurrentAccount={setCurrentAccount} />
         </ThemeProvider>
     )
 }

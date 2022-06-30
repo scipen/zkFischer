@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 const devnetChainId = '0x635ae020'
 // const testnetChainId = '0x6357d2e0'
 
-export default function WalletConnector() {
+export default function WalletConnector(props: any) {
   const { ethereum } = window;
 
   if (!ethereum) {
@@ -21,7 +21,9 @@ export default function WalletConnector() {
     })
   }
 
-  const [currentAccount, setCurrentAccount] = useState<string | null>(null);
+  // const [currentAccount, setCurrentAccount] = useState<string | null>(null);
+  const currentAccount = props.currentAccount;
+  const setCurrentAccount = props.setCurrentAccount;
   const [correctChain, setCorrectChain] = useState<boolean | null>(null);
 
   const checkWalletIsConnected = async () => {

@@ -3,6 +3,7 @@ import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import Alert from "@mui/material/Alert";
+import Modal from "@mui/material/Modal";
 import Typography from "@mui/material/Typography";
 import * as contract from "../contract";
 import Loading from "./components/Loading";
@@ -10,7 +11,7 @@ import ReactMarkdown from 'react-markdown';
 import Chessboard from '../deps/chessboardjsx/Chessboard';
 import Game from "./components/Game";
 
-export default function Play() {
+export default function Play(props: any) {
 
     const md = `## zkFischer
 Last minute UI, will improve soon once I learn some React...  
@@ -59,11 +60,32 @@ Obviously a bad UX for now!
         a7: 'bP', b7: 'bP', c7: 'bP', d7: 'bP', e7: 'bP', f7: 'bP', g7: 'bP', h7: 'bP'
     };
 
+    const GAME_KEY = `zkFischer.gameKey.${props.currentAccount}`;
+    const BOARD_SETUP_KEY = `zkFischer.boardSetupKey.${props.currentAccount}`;
+    const BOARD_SETUP_INPUT = `zkFischer.boardSetupInput.${props.currentAccount}`;
+    const LAST_GAME_POSITION = `zkFischer.lastPosition.${props.currentAccount}`;
+
+    function readLocalStorageKey(key: string, defaultValue: any) {
+        let storedValue;
+        try {
+            storedValue = JSON.parse(localStorage.getItem(key)!);
+            if (!storedValue) {
+                storedValue = defaultValue;
+            }
+        } catch {
+            storedValue = defaultValue;
+        }
+        return storedValue;
+    }
+
     useEffect(() => {
-        setSubmitSetupInput(emptyPosition);
-        setSubmitMoveInput(emptyPosition);
-        setPosition(emptyPosition);
-        setBoardSetupKey("1000");
+        let currentPosition = readLocalStorageKey(LAST_GAME_POSITION, emptyPosition);
+        setSubmitSetupInput(currentPosition);
+        setSubmitMoveInput(currentPosition);
+        setPosition(currentPosition);
+
+        setBoardSetupInput(localStorage.getItem(BOARD_SETUP_INPUT) || "");
+        setBoardSetupKey(localStorage.getItem(BOARD_SETUP_KEY) || "1000")
     }, []);
 
     const register = async (event: any) => {
@@ -97,6 +119,8 @@ Obviously a bad UX for now!
             (value: any) => {
                 setCallOutputMsg(value);
                 setCallOutput(true);
+                localStorage.setItem(BOARD_SETUP_KEY, JSON.stringify(boardSetupKey));
+                localStorage.setItem(BOARD_SETUP_INPUT, JSON.stringify(submitSetupInput));
             },
             (error: any) => {
                 setErrorMsg(error.toString());
@@ -173,6 +197,7 @@ Obviously a bad UX for now!
         await contract.readBoard().then(
             (value: any) => {
                 setPosition(value);
+                localStorage.setItem(LAST_GAME_POSITION, JSON.stringify(value));
             },
             (error: any) => {
                 setErrorMsg(error.toString());
@@ -185,15 +210,11 @@ Obviously a bad UX for now!
     }
 
     const boardSetupKeyHandler = (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (event.target.value !== "") {
-            setBoardSetupKey(event.target.value);
-        }
+        setBoardSetupKey(event.target.value);
     };
 
     const boardSetupInputHandler = (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (event.target.value !== "") {
-            setBoardSetupInput(event.target.value);
-        }
+        setBoardSetupInput(event.target.value);
     };
 
     return (
@@ -217,27 +238,25 @@ Obviously a bad UX for now!
                 id="input-boardSetupKey"
                 label="boardSetupKey"
                 type="text"
-                multiline
-                defaultValue={1000}
-                minRows={1}
+                placeholder="Enter a non-negative integer. Save it if you'll change browsers."
                 InputLabelProps={{
                     shrink: true,
                 }}
                 variant="filled"
                 onChange={boardSetupKeyHandler}
+                value={boardSetupKey}
             />
             <TextField
                 id="input-boardSetupInput"
                 label="boardSetupInput"
                 type="text"
-                multiline
-                defaultValue={"copy + save output from calling `Submit Setup`"}
-                minRows={1}
+                placeholder="This value will populate after calling submitSetup. Save it if you'll change browsers."
                 InputLabelProps={{
                     shrink: true,
                 }}
                 variant="filled"
                 onChange={boardSetupInputHandler}
+                value={boardSetupInput}
             />
             <Button
                 onClick={submitSetup}

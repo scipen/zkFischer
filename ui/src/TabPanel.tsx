@@ -39,7 +39,7 @@ function a11yProps(index: number) {
   };
 }
 
-export default function BasicTabs() {
+export default function BasicTabs(props: any) {
   const [value, setValue] = React.useState(1);
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -63,7 +63,7 @@ export default function BasicTabs() {
         </Tabs>
       </Box>
       <TabPanel value={value} index={1}>
-        <Container><Play /></Container>
+        <Container><Play currentAccount={props.currentAccount} /></Container>
       </TabPanel>
       <TabPanel value={value} index={2}>
         <Debug />

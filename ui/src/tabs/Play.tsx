@@ -29,7 +29,7 @@ How to play:
     * If it's been more than ~10s, you can also click **Read Board** to manually pull the game state from on-chain.
     * Hidden pieces will show up as ghosts.
     * The identities of your pieces (except for king/pawn) are not stored on chain; they are stored in local storage. In some cases this might get corrupted.
-1. Make a move. Click "Submit Move".
+1. Make a move. Click **Submit Move**.
     * If you mess up the board state, click "Read Board" to resync it.
 1. Your board should automatically refresh once it's your turn again.
     * You can also manually sync by clicking "Read Board".

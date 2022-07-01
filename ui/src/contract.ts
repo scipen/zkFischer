@@ -164,9 +164,9 @@ export async function pubSubmitMove(pubInput: any) {
     }
     if (response) {
         if (pubInput["capturedPiece"] == 'wK' || pubInput["capturedPiece"] == 'bK') {
-            return "You win!";
+            return "You win! Click Reset Game to play again.";
         } else {
-            return "Move successful."
+            return "Move successful. Your opponent can click Read Board once your move has propagated."
         }
     } else {
         throw "Invalid proof."
@@ -181,7 +181,7 @@ export async function submitSetup(input: any) {
         try {
             let response = await gameContract.setupBoard(calldata[0], calldata[1], calldata[2], calldata[3]);
             if (response) {
-                return "Setup successful. boardSetupInput should populate with this commponent of your commitment preimage.";
+                return JSON.stringify(input["boardSetup"]);
             }
             else {
                 throw "Invalid proof for setupBoard.";

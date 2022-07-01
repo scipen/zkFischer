@@ -22,7 +22,7 @@ How to play:
     * First person who registers will be White.
 1. Drag pieces onto the back rank for your desired setup. Click **Submit Setup**.
     * You can optionally modify **boardSetupKey** (a salt) if you'd like.
-    * On success, you should see your private board setup commitment **boardSetupInput** at the bottom of screen.
+    * On success, your private board setup commitment **boardSetupInput** should populate.
     * These values are saved in local storage and are used to generate client-side proofs when making moves.
 1. When both players have set up, click **Read Board** to manually pull the game state from on-chain.
     * Hidden pieces will show up as ghosts.
@@ -118,7 +118,7 @@ Top TODOs:
             const color = playerId == 0 ? 'White' : 'Black';
             resetLocalState();
             loadLocalState();
-            setCallOutputMsg(`You are playing ${color}.`);
+            setCallOutputMsg(`You are playing ${color}. Proceed to setup once both players are registered.`);
             setCallOutput(true);
         } catch (error) {
             setErrorMsg(error.toString());
@@ -136,7 +136,7 @@ Top TODOs:
         try {
             const playerId = await contract.getPlayerId();
             const response = await contract.pubSubmitSetup(position, boardSetupKey, playerId);
-            setCallOutputMsg(response);
+            setCallOutputMsg(`Setup successful. boardSetupInput should populate with: ${response}. Click "Read Board" once your opponent has finished setup.`);
             setCallOutput(true);
             // setSetupDialogOpen(true);
             localStorage.setItem(BOARD_SETUP_INPUT, response);

@@ -20,24 +20,26 @@ How to play:
 1. Find a partner. Click **Reset Game**, which will end the currently ongoing game.
 1. Click **Register**. Wait for your partner to do the same.
     * First person who registers will be White.
+    * You should be prompted to proceed to setup when both players have registered.
 1. Drag pieces onto the back rank for your desired setup. Click **Submit Setup**.
     * You can optionally modify **boardSetupKey** (a salt) if you'd like.
     * On success, your private board setup commitment **boardSetupInput** should populate.
     * These values are saved in local storage and are used to generate client-side proofs when making moves.
-1. When both players have set up, click **Read Board** to manually pull the game state from on-chain.
+1. When both players have set up, the board should refresh and prompt White to make a move.
+    * If it's been more than ~10s, you can also click **Read Board** to manually pull the game state from on-chain.
     * Hidden pieces will show up as ghosts.
     * The identities of your pieces (except for king/pawn) are not stored on chain; they are stored in local storage. In some cases this might get corrupted.
 1. Make a move. Click "Submit Move".
     * If you mess up the board state, click "Read Board" to resync it.
-1. You won't be notified when your opponent makes a move. So click "Read Board" again when it's your turn.
-    * You may need to wait a few seconds before reading for the blockchain state to propagate.
+1. Your board should automatically refresh once it's your turn again.
+    * You can also manually sync by clicking "Read Board".
 
 Rules reminder:
 * No pawn promotion, castling, en passant, 3 fold repetition, game turn limit.
 * It's legal to have your king in check. Game ends when a king is captured.
 
 Top TODOs:
-* Don't require manual game state sync.
+* Make it clearer what color you're playing.
 * Split up contract to add more features.
 * Add component move validation (disallow illegal drags).
     `;
@@ -57,7 +59,9 @@ Top TODOs:
     const [errorMsg, setErrorMsg] = useState("");
 
     const [Registering, setRegistering] = useState(false);
+    const [RegisteringConfirm, setRegisteringConfirm] = useState(false);
     const [SubmittingSetup, setSubmittingSetup] = useState(false);
+    const [SubmittingSetupConfirm, setSubmittingSetupConfirm] = useState(false);
     const [SubmittingMove, setSubmittingMove] = useState(false);
     const [ResettingGame, setResettingGame] = useState(false);
     const [ReadingBoard, setReadingBoard] = useState(false);
@@ -89,29 +93,82 @@ Top TODOs:
         return storedValue;
     }
 
-    async function onRegister(address: string) {
+    async function onRegister(acctAddress: string, eventAddress: string) {
+        console.log("onRegister: ", eventAddress);
+        if (acctAddress.toLowerCase() == eventAddress.toLowerCase()) {
+            try {
+                const playerId = await contract.getPlayerId();
+                const color = playerId == 0 ? 'White' : 'Black';
+                resetLocalState();
+                loadLocalState();
+                setCallOutputMsg(`You are playing ${color}. Waiting for contract to receive both players' registration.`);
+                setCallOutput(true);
+            } catch (error) {
+                setErrorMsg(error.toString());
+                setError(true);
+            };
+            setRegisteringConfirm(false);
+        }
+
+        try {
+            const p0 = await contract.getPlayer(0);
+            const p1 = await contract.getPlayer(1);
+            if (p0 != 0 && p1 != 0) {
+                await readBoard();
+                setCallOutputMsg("Both players have registered. Proceed to setup.");
+                setCallOutput(true);
+            }
+        } catch (error) {
+            setErrorMsg(error.toString());
+            setError(true);
+        };
     }
 
-    async function onSetupBoard(address: string) {
+    async function onSetupBoard(acctAddress: string, eventAddress: string) {
+        console.log("onSetupBoard: ", eventAddress);
+        try {
+            const hash0 = await contract.getSetupHash(0);
+            const hash1 = await contract.getSetupHash(1);
+            if (hash0 != 0 && hash1 != 0) {
+                await readBoard();
+                // winner already got winner message
+                setCallOutputMsg("Both players have finished setup. It's now White's turn.");
+                setCallOutput(true);
+            }
+        } catch (error) {
+            setErrorMsg(error.toString());
+            setError(true);
+        };
+        setSubmittingSetupConfirm(false);
     }
 
-    async function onMove(address: string) {
-        if (address != props.currentAccount) {
-            setCallOutputMsg("Opponent has moved, reading board.");
+    async function onMove(acctAddress: string, eventAddress: string) {
+        console.log("onMove: ", eventAddress);
+        if (acctAddress.toLowerCase() != eventAddress.toLowerCase()) {
+            try {
+                await readBoard();
+                setCallOutputMsg("Opponent has moved, it's now your turn.");
+                setCallOutput(true);
+            } catch (error) {
+                setErrorMsg(error.toString());
+                setError(true);
+            };
+        }
+    }
+
+    async function onGameEnd(acctAddress: string, eventAddress: string) {
+        console.log("onGameEnd: ", eventAddress);
+        if (acctAddress.toLowerCase() != eventAddress.toLowerCase()) {
+            setCallOutputMsg("Game over, you came in 2nd place.");
             setCallOutput(true);
         }
-        await readBoard();
-    }
-
-    async function onGameEnd(address: string) {
     }
 
     useEffect(() => {
-        contract.setup(onRegister, onSetupBoard, onMove, onGameEnd);
-    }, []);
-
-    useEffect(() => {
-        loadLocalState();
+        if (props.currentAccount != null) {
+            contract.setup(props.currentAccount, onRegister, onSetupBoard, onMove, onGameEnd);
+            loadLocalState();
+        }
     }, [props.currentAccount]);
 
     function loadLocalState() {
@@ -134,15 +191,10 @@ Top TODOs:
         setRegistering(true);
         try {
             await contract.register();
-            // TODO: no read after write consistency here
-            const playerId = await contract.getPlayerId();
-            const color = playerId == 0 ? 'White' : 'Black';
-            resetLocalState();
-            loadLocalState();
-            setCallOutputMsg(`You are playing ${color}. Proceed to setup once both players are registered.`);
-            setCallOutput(true);
+            setRegistering(false);
+            setRegisteringConfirm(true);
         } catch (error) {
-            setErrorMsg(error.toString() + " (possibly a mistake due to blockchain data consistency race, try calling again or moving to Setup)");
+            setErrorMsg(error.toString());
             setError(true);
         };
         setRegistering(false);
@@ -157,9 +209,8 @@ Top TODOs:
         try {
             const playerId = await contract.getPlayerId();
             const response = await contract.pubSubmitSetup(position, boardSetupKey, playerId);
-            setCallOutputMsg(`Setup successful. boardSetupInput should populate with: ${response}. Click "Read Board" once your opponent has finished setup.`);
+            setCallOutputMsg(`Setup successful. boardSetupInput should populate with: ${response}. Waiting for contract to receive both players' setup.`);
             setCallOutput(true);
-            // setSetupDialogOpen(true);
             localStorage.setItem(BOARD_SETUP_INPUT, response);
             localStorage.setItem(BOARD_SETUP_KEY, boardSetupKey);
             setBoardSetupInput(localStorage.getItem(BOARD_SETUP_INPUT) || "");
@@ -167,10 +218,11 @@ Top TODOs:
             const playerSetupPosition = gameUtils.filterSetupPosition(position, playerId);
             setPosition(playerSetupPosition);
             localStorage.setItem(LAST_GAME_POSITION, JSON.stringify(playerSetupPosition));
+            setSubmittingSetup(false);
+            setSubmittingSetupConfirm(true);
         } catch (error) {
             setErrorMsg(error.toString());
             setError(true);
-            setSubmittingSetup(false);
         };
         setSubmittingSetup(false);
         event.preventDefault();
@@ -359,7 +411,9 @@ Top TODOs:
             </Button>
             <br /><br />
             {Registering ? <Loading text="Registering..." /> : <div />}
+            {RegisteringConfirm ? <Loading text="Waiting for registration confirmation..." /> : <div />}
             {SubmittingSetup ? <Loading text="Submitting setup..." /> : <div />}
+            {SubmittingSetupConfirm ? <Loading text="Waiting for setup confirmation..." /> : <div />}
             {SubmittingMove ? <Loading text="Submitting move..." /> : <div />}
             {ResettingGame ? <Loading text="Resetting game..." /> : <div />}
             {ReadingBoard ? <Loading text="Reading board..." /> : <div />}

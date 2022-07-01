@@ -23,19 +23,27 @@ export async function connectContract() {
 }
 
 export async function setup(
-    onRegister: (address: string) => void,
-    onSetupBoard: (address: string) => void,
-    onMove: (address: string) => void,
-    onGameEnd: (address: string) => void
+    acctAddress: string,
+    onRegister: (acctAddress: string, eventAddress: string) => void,
+    onSetupBoard: (acctAddress: string, eventAddress: string) => void,
+    onMove: (acctAddress: string, eventAddress: string) => void,
+    onGameEnd: (acctAddress: string, eventAddress: string) => void
     ) {
     console.log("Setting up contract connection...");
     signerAddress = await connectContract();
 
-    // TODO: broken
-    // gameContract.on("Register", onRegister);
-    // gameContract.on("SetupBoard", onSetupBoard);
-    // gameContract.on("Move", onMove);
-    // gameContract.on("GameEnd", onGameEnd);
+    gameContract.on("Register", (eventAddress) => {
+        onRegister(acctAddress, eventAddress);
+    });
+    gameContract.on("SetupBoard", (eventAddress) => {
+        onSetupBoard(acctAddress, eventAddress);
+    });
+    gameContract.on("Move", (eventAddress) => {
+        onMove(acctAddress, eventAddress);
+    });
+    gameContract.on("GameEnd", (eventAddress) => {
+        onGameEnd(acctAddress, eventAddress);
+    });
 }
 
 export async function register() {
@@ -47,11 +55,20 @@ export async function register() {
     }
 }
 
-export async function getPlayerId() {
+export async function getPlayer(idx: number) {
     console.log("Calling contract.players");
     try {
-        let p0 = await gameContract.players(0);
-        let p1 = await gameContract.players(1);
+        return await gameContract.players(idx);
+    } catch(error) {
+        throw JSON.stringify(error);
+    }
+}
+
+export async function getPlayerId() {
+    console.log("Calling contract.players for ID");
+    try {
+        const p0 = await gameContract.players(0);
+        const p1 = await gameContract.players(1);
         console.log(`Players: [${p0}, ${p1}]`);
         if (signerAddress == p0) {
             return 0;
@@ -168,7 +185,7 @@ export async function pubSubmitMove(pubInput: any) {
         if (pubInput["capturedPiece"] == 'wK' || pubInput["capturedPiece"] == 'bK') {
             return "You win! Click Reset Game to play again.";
         } else {
-            return "Move successful. Your opponent can click Read Board once your move has propagated."
+            return "Move successful. Board will refresh when your opponent has moved."
         }
     } else {
         throw "Invalid proof."

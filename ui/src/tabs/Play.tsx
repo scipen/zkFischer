@@ -6,6 +6,7 @@ import Alert from "@mui/material/Alert";
 import Modal from "@mui/material/Modal";
 import Typography from "@mui/material/Typography";
 import * as contract from "../contract";
+import * as gameUtils from "../gameUtils";
 import Loading from "./components/Loading";
 import ReactMarkdown from 'react-markdown';
 import Chessboard from '../deps/chessboardjsx/Chessboard';
@@ -13,30 +14,41 @@ import Game from "./components/Game";
 
 export default function Play(props: any) {
 
-    const md = `## zkFischer
-Last minute UI, will improve soon once I learn some React...  
-You can use the debug tab if the chessboard UI is broken.  
-1. Find a partner / make sure nobody else is playing (you can check \`contract.phase\` onchain)
-1. Click "register".
-2. Drag back rank to desired setup. Click "submit setup".
-    * UI might be flaky, if you make a mistake try refreshing.
-    * On success, you should see your private board setup commitment at the bottom of screen. Save this and put it in boardSetupInput
-3. ~~Hidden pieces will show up as queens (pending working dependency patch + custom svg).~~ update: they now show up as blobs
-3. When both players have set up, click "Read Board" to manually pull the game state from on-chain.
-4. Make a move. Click "submit move".
-5. You won't be notified when your opponent makes a move. So click "Read Board" again when it's your turn.
-5. When game is done, click "reset game" for the next person.
+    const md = `## zkFischer (UI WIP)
+How to play:
 
-Obviously a bad UX for now!
+1. Find a partner. Click **Reset Game**, which will end the currently ongoing game.
+1. Click **Register**. Wait for your partner to do the same.
+    * First person who registers will be White.
+1. Drag pieces onto the back rank for your desired setup. Click **Submit Setup**.
+    * You can optionally modify **boardSetupKey** (a salt) if you'd like.
+    * On success, you should see your private board setup commitment **boardSetupInput** at the bottom of screen.
+    * These values are saved in local storage and are used to generate client-side proofs when making moves.
+1. When both players have set up, click **Read Board** to manually pull the game state from on-chain.
+    * Hidden pieces will show up as ghosts.
+    * The identities of your pieces (except for king/pawn) are not stored on chain; they are stored in local storage. In some cases this might get corrupted.
+1. Make a move. Click "Submit Move".
+    * If you mess up the board state, click "Read Board" to resync it.
+1. You won't be notified when your opponent makes a move. So click "Read Board" again when it's your turn.
+    * You may need to wait a few seconds before reading for the blockchain state to propagate.
+
+Rules reminder:
+* No pawn promotion, castling, en passant, 3 fold repetition, game turn limit.
+* It's legal to have your king in check. Game ends when a king is captured.
+
+Top TODOs:
+* Don't require manual game state sync.
+* Split up contract to add more features.
+* Add component move validation (disallow illegal drags).
     `;
 
     const [position, setPosition] = useState({});
+    // const [gamePhase, setGamePhase] = useState("Not connected.");
 
     const [boardSetupInput, setBoardSetupInput] = useState("");
     const [boardSetupKey, setBoardSetupKey] = useState("");
 
-    const [submitSetupInput, setSubmitSetupInput] = useState({});
-    const [submitMoveInput, setSubmitMoveInput] = useState({});
+    // const [setupDialogOpen, setSetupDialogOpen] = useState(false);
 
     const [callOutput, setCallOutput] = useState(false);
     const [callOutputMsg, setCallOutputMsg] = useState("");
@@ -51,8 +63,7 @@ Obviously a bad UX for now!
     const [ReadingBoard, setReadingBoard] = useState(false);
 
     const getPos = async (currentPosition: any) => {
-        setSubmitSetupInput(currentPosition);
-        setSubmitMoveInput(currentPosition);
+        setPosition(currentPosition);
     }
 
     const emptyPosition = {
@@ -79,32 +90,40 @@ Obviously a bad UX for now!
     }
 
     useEffect(() => {
-        let currentPosition = readLocalStorageKey(LAST_GAME_POSITION, emptyPosition);
-        setSubmitSetupInput(currentPosition);
-        setSubmitMoveInput(currentPosition);
-        setPosition(currentPosition);
+        loadLocalState();
+    }, [props.currentAccount]);
 
+    function loadLocalState() {
         setBoardSetupInput(localStorage.getItem(BOARD_SETUP_INPUT) || "");
-        setBoardSetupKey(localStorage.getItem(BOARD_SETUP_KEY) || "1000")
-    }, []);
+        setBoardSetupKey(localStorage.getItem(BOARD_SETUP_KEY) || "1000");
+        let currentPosition = readLocalStorageKey(LAST_GAME_POSITION, emptyPosition);
+        setPosition(currentPosition);
+    }
+
+    function resetLocalState() {
+        localStorage.removeItem(BOARD_SETUP_INPUT);
+        localStorage.removeItem(BOARD_SETUP_KEY);
+        localStorage.removeItem(LAST_GAME_POSITION);
+    }
 
     const register = async (event: any) => {
         event.preventDefault();
         setError(false);
         setCallOutput(false);
-
         setRegistering(true);
-        await contract.register().then(
-            (value: any) => {
-                setCallOutputMsg(value);
-                setCallOutput(true);
-            },
-            (error: any) => {
-                setErrorMsg(error.toString());
-                setError(true);
-                setRegistering(false);
-            });
-        
+        try {
+            await contract.register();
+            // TODO: will below read always work?
+            const playerId = await contract.getPlayerId();
+            const color = playerId == 0 ? 'White' : 'Black';
+            resetLocalState();
+            loadLocalState();
+            setCallOutputMsg(`You are playing ${color}.`);
+            setCallOutput(true);
+        } catch (error) {
+            setErrorMsg(error.toString());
+            setError(true);
+        };
         setRegistering(false);
         event.preventDefault();
     }
@@ -113,21 +132,25 @@ Obviously a bad UX for now!
         event.preventDefault();
         setError(false);
         setCallOutput(false);
-
         setSubmittingSetup(true);
-        await contract.pubSubmitSetup(submitSetupInput, boardSetupKey).then(
-            (value: any) => {
-                setCallOutputMsg(value);
-                setCallOutput(true);
-                localStorage.setItem(BOARD_SETUP_KEY, JSON.stringify(boardSetupKey));
-                localStorage.setItem(BOARD_SETUP_INPUT, JSON.stringify(submitSetupInput));
-            },
-            (error: any) => {
-                setErrorMsg(error.toString());
-                setError(true);
-                setSubmittingSetup(false);
-            });
-
+        try {
+            const playerId = await contract.getPlayerId();
+            const response = await contract.pubSubmitSetup(position, boardSetupKey, playerId);
+            setCallOutputMsg(response);
+            setCallOutput(true);
+            // setSetupDialogOpen(true);
+            localStorage.setItem(BOARD_SETUP_INPUT, response);
+            localStorage.setItem(BOARD_SETUP_KEY, boardSetupKey);
+            setBoardSetupInput(localStorage.getItem(BOARD_SETUP_INPUT) || "");
+            setBoardSetupKey(localStorage.getItem(BOARD_SETUP_KEY) || "1000");
+            const playerSetupPosition = gameUtils.filterSetupPosition(position, playerId);
+            setPosition(playerSetupPosition);
+            localStorage.setItem(LAST_GAME_POSITION, JSON.stringify(playerSetupPosition));
+        } catch (error) {
+            setErrorMsg(error.toString());
+            setError(true);
+            setSubmittingSetup(false);
+        };
         setSubmittingSetup(false);
         event.preventDefault();
     }
@@ -136,33 +159,52 @@ Obviously a bad UX for now!
         event.preventDefault();
         setError(false);
         setCallOutput(false);
-
         setSubmittingMove(true);
-        let move;
-        await contract.diffBoard(submitMoveInput).then(
-            (value: any) => {
-                // setCallOutputMsg(value);
-                // setCallOutput(true);
-                move = value;
-            },
-            (error: any) => {
-                setErrorMsg(error.toString());
-                setError(true);
-                setSubmittingMove(false);
-            });
-        if (move != null) {
-            await contract.pubSubmitMove(boardSetupInput, boardSetupKey, move).then(
-                (value: any) => {
-                    setCallOutputMsg(value);
-                    setCallOutput(true);
-                },
-                (error: any) => {
-                    setErrorMsg(error.toString());
-                    setError(true);
-                    setSubmittingMove(false);
-                });
-        }
+        try {
+            const playerId = await contract.getPlayerId();
+            const chainPosition = await contract.readBoard();
+            const computedMove = gameUtils.computePlayerMove(position, chainPosition);
 
+            // parseMove
+            const fromSq = gameUtils.sqToCoords(computedMove["fromSq"]);
+            const toSq = gameUtils.sqToCoords(computedMove["toSq"]);
+            const pcStartingFile = await contract.getStartingFile(fromSq[0], fromSq[1]);
+            const dx = Math.abs(fromSq[0]-toSq[0]);
+            const dy = Math.abs(fromSq[1]-toSq[1]);
+            let allowedPieces = [0, 0, 0];
+            if (dx == 2 && dy == 1 || dx == 1 && dy == 2) {
+                allowedPieces = [2, 0, 0]; // knight
+            } else if (dx == 0 || dy == 0) {
+                allowedPieces = [1, 4, 0]; // rook/queen
+            } else if (dx == dy) {
+                allowedPieces = [3, 4, 0]; // bishop/queen
+            }
+            const response = await contract.pubSubmitMove({
+                "fromSq": fromSq,
+                "toSq": toSq,
+                "pcStartingFile": pcStartingFile,
+                "allowedPieces": allowedPieces,
+                "boardSetupInput": boardSetupInput,
+                "boardSetupKey": boardSetupKey,
+                "piece": computedMove["piece"],
+                "capturedPiece": computedMove["capturedPiece"],
+                "playerId": playerId
+            });
+            
+            // update position
+            let newPosition: gameUtils.Position = Object.assign({}, position);
+            delete newPosition[computedMove["fromSq"]];
+            newPosition[computedMove["toSq"]] = computedMove["piece"];
+            setPosition(newPosition);
+            localStorage.setItem(LAST_GAME_POSITION, JSON.stringify(newPosition));
+
+            setCallOutputMsg(response);
+            setCallOutput(true);
+        } catch (error) {
+            setErrorMsg(error.toString());
+            setError(true);
+            setSubmittingMove(false);
+        }
         setSubmittingMove(false);
         event.preventDefault();
     }
@@ -171,40 +213,40 @@ Obviously a bad UX for now!
         event.preventDefault();
         setError(false);
         setCallOutput(false);
-
         setResettingGame(true);
-        await contract.resetGame().then(
-            (value: any) => {
-                setCallOutputMsg(value);
-                setCallOutput(true);
-            },
-            (error: any) => {
-                setErrorMsg(error.toString());
-                setError(true);
-                setResettingGame(false);
-            });
-
+        try {
+            const response = await contract.resetGame();
+            resetLocalState();
+            loadLocalState();
+            setCallOutputMsg(response);
+            setCallOutput(true);
+        } catch (error) {
+            setErrorMsg(error.toString());
+            setError(true);
+            setResettingGame(false);
+        }
         setResettingGame(false);
         event.preventDefault();
     }
 
+    // TODO: you can call this after your opponent has set up but before you have to reveal their king position
     const readBoard = async (event: any) => {
         event.preventDefault();
         setError(false);
         setCallOutput(false);
-
         setReadingBoard(true);
-        await contract.readBoard().then(
-            (value: any) => {
-                setPosition(value);
-                localStorage.setItem(LAST_GAME_POSITION, JSON.stringify(value));
-            },
-            (error: any) => {
-                setErrorMsg(error.toString());
-                setError(true);
-                setReadingBoard(false);
-            });
-
+        try {
+            const currentPosition = readLocalStorageKey(LAST_GAME_POSITION, emptyPosition);
+            const chainPosition = await contract.readBoard();
+            const playerId = await contract.getPlayerId();
+            const computedPosition = gameUtils.computePlayerPosition(currentPosition, chainPosition, playerId);
+            setPosition(computedPosition);
+            localStorage.setItem(LAST_GAME_POSITION, JSON.stringify(computedPosition));
+        } catch (error) {
+            setErrorMsg(error.toString());
+            setError(true);
+            setReadingBoard(false);
+        }
         setReadingBoard(false);
         event.preventDefault();
     }
@@ -226,6 +268,7 @@ Obviously a bad UX for now!
             }}
         >
             <ReactMarkdown children={md}/>
+            {/* <Typography>Game phase: {gamePhase}</Typography> */}
             <Chessboard position={position} sparePieces getPosition={getPos} />
             {/* <Game position={position} getPosition={getPos}/> */}
             <br />
@@ -246,6 +289,21 @@ Obviously a bad UX for now!
                 onChange={boardSetupKeyHandler}
                 value={boardSetupKey}
             />
+            {/* <Modal
+                open={setupDialogOpen}
+                onClose={() => {setSetupDialogOpen(false);}}
+                aria-labelledby="modal-modal-title"
+                aria-describedby="modal-modal-description"
+            >
+                <Box>
+                    <Typography id="modal-modal-title" variant="h6" component="h2">
+                    Text in a modal
+                    </Typography>
+                    <Typography id="modal-modal-description" sx={{ mt: 2 }}>
+                    Duis mollis, est non commodo luctus, nisi erat porttitor ligula.
+                    </Typography>
+                </Box>
+            </Modal> */}
             <TextField
                 id="input-boardSetupInput"
                 label="boardSetupInput"

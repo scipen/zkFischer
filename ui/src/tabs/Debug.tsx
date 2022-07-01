@@ -75,7 +75,7 @@ export default function Debug() {
         setCallOutput(false);
 
         setSubmittingSetup(true);
-        await contract.submitSetup(submitSetupInput).then(
+        await contract.submitSetup(JSON.parse(submitSetupInput)).then(
             (value: any) => {
                 setCallOutputMsg(value);
                 setCallOutput(true);
@@ -96,7 +96,7 @@ export default function Debug() {
         setCallOutput(false);
 
         setSubmittingMove(true);
-        await contract.submitMove(submitMoveInput).then(
+        await contract.submitMove(JSON.parse(submitMoveInput)).then(
             (value: any) => {
                 setCallOutputMsg(value);
                 setCallOutput(true);

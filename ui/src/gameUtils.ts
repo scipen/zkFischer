@@ -4,6 +4,12 @@ export type Piece =
   'wZ' | 'bZ'
 ;
 
+export type Position = { [key: string]: Piece };
+
+function pieceColor(piece: Piece) {
+    return piece[0];
+}
+
 // piece values from contract
 export const pcToCode: {[piece in Piece]: number} = {
     'wR': 1, 'wN': 2, 'wB': 3, 'wQ': 4, 'wK': 5, 'wP': 6, 'wZ': 9,
@@ -21,24 +27,26 @@ const colToFile: {[col: number]: string} = Object.fromEntries(Object.entries(fil
 
 export function sqToCoords(square: string): [number, number] {
     // 'a1' -> [7,0]
-    let file: string = square[0];
-    let rank: number = Number(square[1]);
+    const file: string = square[0];
+    const rank: number = Number(square[1]);
     
-    let row = 8-rank;
-    let col = fileToCol[file];
+    const row = 8-rank;
+    const col = fileToCol[file];
     return [row, col];
 }
 
 export function coordsToSq(row: number, col: number): string {
     // [0,0] -> 'a8'
-    let rank = 8-row;
-    let file = colToFile[col];
+    const rank = 8-row;
+    const file = colToFile[col];
     return file + rank.toString();
 }
 
-export function posToBoardSetupInput(position: {[key: string]: Piece}, playerId: number): number[] {
+export function posToBoardSetupInput(position: Position, playerId: 0 | 1): number[] {
+    const playerColor = playerId == 0 ? 'White' : 'Black';
+    let boardSetup;
     if (playerId == 0) {
-        return [
+        boardSetup = [
             pcToCircuitCode[position['a1']],
             pcToCircuitCode[position['b1']],
             pcToCircuitCode[position['c1']],
@@ -48,8 +56,8 @@ export function posToBoardSetupInput(position: {[key: string]: Piece}, playerId:
             pcToCircuitCode[position['g1']],
             pcToCircuitCode[position['h1']]
         ];
-    } else if (playerId == 1) {
-        return [
+    } else {
+        boardSetup = [
             pcToCircuitCode[position['a8']],
             pcToCircuitCode[position['b8']],
             pcToCircuitCode[position['c8']],
@@ -60,15 +68,82 @@ export function posToBoardSetupInput(position: {[key: string]: Piece}, playerId:
             pcToCircuitCode[position['h8']]
         ];
     }
-    throw `Bad playerId ${playerId}`;
+    if (boardSetup.some(c => isNaN(c))) {
+        throw `Setup for ${playerColor} is incomplete.`
+    }
+    return boardSetup;
 }
 
-export function posToKingCol(position: {[key: string]: Piece}, playerId: number): number {
-    let targetPiece = playerId == 0 ? 'wK' : 'bK';
+export function posToKingCol(position: Position, playerId: number): number {
+    const playerColor = playerId == 0 ? 'White' : 'Black';
+    const targetPiece = playerId == 0 ? 'wK' : 'bK';
     for (const [square, piece] of Object.entries(position)) {
         if (piece == targetPiece) {
             return sqToCoords(square)[1];
         }
     }
-    throw `King not found for player ${playerId}`;
+    throw `King not found for ${playerColor}.`;
+}
+
+export function filterSetupPosition(
+    clientPosition: Position,
+    playerId: 0 | 1) {
+    const playerColor = playerId == 0 ? 'w' : 'b';
+    const setupPosition = Object.fromEntries(
+        Object.entries(clientPosition).filter(
+           ([square, pc]) => pc[0] == playerColor
+        )
+    );
+    return setupPosition;
+}
+
+export function computePlayerPosition(
+    clientPosition: Position,
+    chainPosition: Position,
+    playerId: 0 | 1) {
+    const playerColor = playerId == 0 ? 'w' : 'b';
+    const opponentColor = playerId == 0 ? 'b' : 'w';
+    const computedPosition = Object.fromEntries(
+        Object.entries(clientPosition).filter(
+           ([square, pc]) => pc[0] == playerColor
+        ).concat(
+        Object.entries(chainPosition).filter(
+            ([square, pc]) => pc[0] == opponentColor
+        ))
+    );
+    return computedPosition
+}
+
+export function computePlayerMove(
+    clientPosition: Position,
+    chainPosition: Position) {
+    let fromSqs = [];
+    let toSqs = [];
+    let piece: Piece;
+    let capturedPiece: Piece | string = "";
+    for (let [square, pc] of Object.entries(chainPosition)) {
+        if (!clientPosition.hasOwnProperty(square)) {
+            fromSqs.push(square);
+        }
+    }
+    for (let [square, pc] of Object.entries(clientPosition)) {
+        if (!chainPosition.hasOwnProperty(square)) {
+            toSqs.push(square);
+            piece = pc;
+        } else if (pieceColor(chainPosition[square]) != pieceColor(pc)) {
+            toSqs.push(square);
+            piece = pc;
+            capturedPiece = chainPosition[square];
+        }
+    }
+    if (fromSqs.length != 1 || toSqs.length != 1) {
+        throw `Game not started, invalid move, or client position corrupted. Try calling readBoard to sync state, then try moving again.\n
+fromSqs: ${JSON.stringify(fromSqs)}, toSqs: ${JSON.stringify(toSqs)}`
+    }
+    return {
+        "fromSq": fromSqs[0],
+        "toSq": toSqs[0],
+        "piece": piece!,
+        "capturedPiece": capturedPiece
+    }
 }

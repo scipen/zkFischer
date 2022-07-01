@@ -89,6 +89,27 @@ Top TODOs:
         return storedValue;
     }
 
+    async function onRegister(address: string) {
+    }
+
+    async function onSetupBoard(address: string) {
+    }
+
+    async function onMove(address: string) {
+        if (address != props.currentAccount) {
+            setCallOutputMsg("Opponent has moved, reading board.");
+            setCallOutput(true);
+        }
+        await readBoard();
+    }
+
+    async function onGameEnd(address: string) {
+    }
+
+    useEffect(() => {
+        contract.setup(onRegister, onSetupBoard, onMove, onGameEnd);
+    }, []);
+
     useEffect(() => {
         loadLocalState();
     }, [props.currentAccount]);
@@ -113,7 +134,7 @@ Top TODOs:
         setRegistering(true);
         try {
             await contract.register();
-            // TODO: will below read always work?
+            // TODO: no read after write consistency here
             const playerId = await contract.getPlayerId();
             const color = playerId == 0 ? 'White' : 'Black';
             resetLocalState();
@@ -121,7 +142,7 @@ Top TODOs:
             setCallOutputMsg(`You are playing ${color}. Proceed to setup once both players are registered.`);
             setCallOutput(true);
         } catch (error) {
-            setErrorMsg(error.toString());
+            setErrorMsg(error.toString() + " (possibly a mistake due to blockchain data consistency race, try calling again or moving to Setup)");
             setError(true);
         };
         setRegistering(false);
@@ -230,8 +251,8 @@ Top TODOs:
     }
 
     // TODO: you can call this after your opponent has set up but before you have to reveal their king position
-    const readBoard = async (event: any) => {
-        event.preventDefault();
+    const readBoard = async (event?: any) => {
+        if (event) { event.preventDefault(); }
         setError(false);
         setCallOutput(false);
         setReadingBoard(true);
@@ -248,7 +269,7 @@ Top TODOs:
             setReadingBoard(false);
         }
         setReadingBoard(false);
-        event.preventDefault();
+        if (event) { event.preventDefault(); }
     }
 
     const boardSetupKeyHandler = (event: React.ChangeEvent<HTMLInputElement>) => {

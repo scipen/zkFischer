@@ -6,6 +6,7 @@ import { buildPoseidon } from "./poseidon";
 import * as gameUtils from "./gameUtils";
 
 let poseidon;
+let signerAddress: any;
 export let gameContract: ethers.Contract;
 
 export async function connectContract() {
@@ -21,20 +22,26 @@ export async function connectContract() {
     return signerAddress;
 }
 
+export async function setup(
+    onRegister: (address: string) => void,
+    onSetupBoard: (address: string) => void,
+    onMove: (address: string) => void,
+    onGameEnd: (address: string) => void
+    ) {
+    console.log("Setting up contract connection...");
+    signerAddress = await connectContract();
+
+    // TODO: broken
+    // gameContract.on("Register", onRegister);
+    // gameContract.on("SetupBoard", onSetupBoard);
+    // gameContract.on("Move", onMove);
+    // gameContract.on("GameEnd", onGameEnd);
+}
+
 export async function register() {
     console.log("Calling contract.register");
-    await connectContract();
     try {
-        // TODO
-        let tx = await gameContract.register();
-        console.log(tx);
-        
-        let receipt = await tx.wait();
-        console.log(receipt);
-
-        let sumEvent = receipt.events.pop();
-        console.log(sumEvent);
-        return "Registration successful.";
+        await gameContract.register();
     } catch(error) {
         throw JSON.stringify(error);
     }
@@ -42,7 +49,6 @@ export async function register() {
 
 export async function getPlayerId() {
     console.log("Calling contract.players");
-    let signerAddress = await connectContract();
     try {
         let p0 = await gameContract.players(0);
         let p1 = await gameContract.players(1);
@@ -61,7 +67,6 @@ export async function getPlayerId() {
 
 export async function getSetupHash(idx: number) {
     console.log("Calling contract.setupHashes");
-    await connectContract();
     try {
         return await gameContract.setupHashes(idx);
     } catch(error) {
@@ -71,19 +76,16 @@ export async function getSetupHash(idx: number) {
 
 export async function getStartingFile(i: number, j: number) {
     console.log("Calling contract.setupHashes");
-    await connectContract();
     return await gameContract.startingFiles(i, j);
 }
 
 export async function getPhase() {
     console.log("Calling contract.phase");
-    await connectContract();
     return await gameContract.phase();
 }
 
 export async function readBoard() {
     console.log("Calling contract.board");
-    await connectContract();
     let pieceCode;
     let boardState : gameUtils.Position = {};  // eg {'a1': 'bQ'}
     for (let i=0; i<8; i++) {
@@ -174,7 +176,6 @@ export async function pubSubmitMove(pubInput: any) {
 }
 
 export async function submitSetup(input: any) {
-    await connectContract();
     console.log(input);
     let calldata = await generateCalldata(input, 'verifyPlacement_final.zkey', 'verifyPlacement.wasm');
     if (calldata) {
@@ -196,7 +197,6 @@ export async function submitSetup(input: any) {
 }
 
 export async function submitMove(input: any) {
-    await connectContract();
     console.log(input);
     let fromSq = input["fromSq"];
     let toSq = input["toSq"];
@@ -224,7 +224,6 @@ export async function submitMove(input: any) {
 
 export async function resetGame() {
     console.log("Calling contract.resetGame");
-    await connectContract();
     try {
         await gameContract.resetGame();
         return "Game reset.";

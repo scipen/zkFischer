@@ -6,13 +6,18 @@ Currently, there is no pawn promotion or en passant due to hitting contract byte
 
 Play here: [https://zk-fischer.vercel.app/](https://zk-fischer.vercel.app/) (only one active game at a time, globally)
 
-Harmony devnet:
+Polygon mainnet contracts:
 ```
-deploying "VerifyPlacementVerifier" (tx: 0xb7d69c0c88e3115e80a4cc49137c163518e1d89f86bc7d1fe10a1506f091e1a3)...: deployed at 0xa414216B4350be4F268DC5Ce85b4DfbD6342c2C1 with 2045633 gas
+"polygon_VerifyPlacementVerifier": "0x91Dd7378A3176382f1c07EdD0444e99B4b412890",
+"polygon_VerifyMoveVerifier": "0x49E2410704126E5d59bf75E1bd822A6c4fe34491",
+"polygon_zkFischer": "0x76c8adbE58E2E0078F999051E4235429962A9152"
+```
 
-deploying "VerifyMoveVerifier" (tx: 0x7d5a992db1311a559fa09ba7a402ad065f711637f99838edd0f54a5ae789cf3b)...: deployed at 0x052Cc560E7B50DE11F754d2fe20A6857bedC8ceF with 2214845 gas
-
-deploying "zkFischer" (tx: 0x723b4acc6e2381a74d65c448d9754241cbf3f726bced7a0348ab8af596d3af6a)...: deployed at 0x0530f1E594931d8F33E4718fFB0909635D6c02b8 with 6677820 gas
+Harmony devnet contracts:
+```
+"devnet_VerifyPlacementVerifier": "0xa414216B4350be4F268DC5Ce85b4DfbD6342c2C1",
+"devnet_VerifyMoveVerifier": "0x052Cc560E7B50DE11F754d2fe20A6857bedC8ceF",
+"devnet_zkFischer": "0x0530f1E594931d8F33E4718fFB0909635D6c02b8",
 ```
 
 Boilerplate sources:
@@ -39,14 +44,3 @@ During gameplay, the contract keeps track of which squares are occupied by revea
 Both circuits include a public `gameKey` input and private `boardSetupKey` input to thwart rainbow attacks.
 
 TODO: `gameKey` is currently hardcoded to 0 due to hitting a contract size limit.
-
-## Playing
-
-Should be self-explanatory once the UI is integrated (currently not).
-
-## TODOs
-
-* Add UI
-* Enable more code by splitting up contract
-* Add some missing chess rules
-* Add variants like atomic chess

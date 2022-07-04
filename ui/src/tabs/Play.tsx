@@ -62,7 +62,8 @@ allowing you to **rearrange your starting back rank** while keeping that setup *
 
 The game runs fully on-chain using zkSNARKs to allow only legal moves. Built as part of [ZKU](https://zku.one/).
 
-**Github:** [https://github.com/scipen/zkFischer](https://github.com/scipen/zkFischer)
+**Github:** [https://github.com/scipen/zkFischer](https://github.com/scipen/zkFischer)  
+**Demo:** [https://www.youtube.com/watch?v=GyXw3iMLfX0](https://www.youtube.com/watch?v=GyXw3iMLfX0)
     `;
 
     const mdHow = `
@@ -102,7 +103,7 @@ Avoid refreshing the page for the best experience (resuming from local state is 
 You will also need to export the private circuit inputs you used during game setup. Everything is stored under [localStorage](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage) prefix \`zkFischer\`.
 
 **Q: How does this work?**  
-**A:** Watch this demo video. (TBD)
+**A:** See the Github README or demo (linked above) for more info.
 
 **Q: Will there be improvements?**  
 **A:** Maybe. First focus is on usability and bugfixes. Then on adding pawn promotion. Then on adding fun variants like [atomic](https://en.wikipedia.org/wiki/Atomic_chess).

@@ -36,10 +36,15 @@ module.exports = {
             accounts: [`${HARMONY_PRIVATE_KEY}`]
         },
         mainnet: {
-            url: "https://api.s0.t.hmny.io",
+            url: "https://api.harmony.one",
             chainId: 1666600000,
             accounts: [`${HARMONY_PRIVATE_KEY}`]
         },
+        polygon: {
+            url: "https://polygon-rpc.com/",
+            chainId: 137,
+            accounts: [`${HARMONY_PRIVATE_KEY}`]
+        }
     },
     namedAccounts: {
         deployer: 0,

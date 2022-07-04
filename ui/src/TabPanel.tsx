@@ -4,7 +4,6 @@ import Tab from '@mui/material/Tab';
 import Container from '@mui/material/Container'
 import Box from '@mui/material/Box';
 import Play from './tabs/Play';
-import Debug from './tabs/Debug';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -40,7 +39,7 @@ function a11yProps(index: number) {
 }
 
 export default function BasicTabs(props: any) {
-  const [value, setValue] = React.useState(1);
+  const [value, setValue] = React.useState(0);
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
@@ -52,21 +51,17 @@ export default function BasicTabs(props: any) {
         <Tabs 
         value={value} 
         onChange={handleChange} 
-        variant="scrollable"
-        scrollButtons="auto"
-        allowScrollButtonsMobile={true}
+        // variant="scrollable"
+        // scrollButtons="auto"
+        // allowScrollButtonsMobile={true}
         aria-label="scrollable auto tabs example"
+        centered
         >
           <Tab label="zkFischer" {...a11yProps(0)} disabled />
-          <Tab label="Play" {...a11yProps(1)} />
-          <Tab label="Debug" {...a11yProps(2)} />
         </Tabs>
       </Box>
-      <TabPanel value={value} index={1}>
+      <TabPanel value={value} index={0}>
         <Container><Play currentAccount={props.currentAccount} /></Container>
-      </TabPanel>
-      <TabPanel value={value} index={2}>
-        <Debug />
       </TabPanel>
     </Box>
   );

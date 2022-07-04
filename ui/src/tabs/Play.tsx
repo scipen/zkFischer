@@ -4,53 +4,129 @@ import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import Alert from "@mui/material/Alert";
 import Modal from "@mui/material/Modal";
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
+import Grid from '@mui/material/Grid';
+import Paper from '@mui/material/Paper';
 import Typography from "@mui/material/Typography";
 import * as contract from "../contract";
 import * as gameUtils from "../gameUtils";
 import Loading from "./components/Loading";
 import ReactMarkdown from 'react-markdown';
 import Chessboard from '../deps/chessboardjsx/Chessboard';
-import Game from "./components/Game";
+
+
+interface TabPanelProps {
+    children?: React.ReactNode;
+    index: number;
+    value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+    const { children, value, index, ...other } = props;
+  
+    return (
+      <div
+        role="tabpanel"
+        hidden={value !== index}
+        id={`vertical-tabpanel-${index}`}
+        aria-labelledby={`vertical-tab-${index}`}
+        {...other}
+      >
+        {value === index && (
+          <Box sx={{ p: 3 }}>
+            <Typography>{children}</Typography>
+          </Box>
+        )}
+      </div>
+    );
+}
+
+function a11yProps(index: number) {
+    return {
+      id: `vertical-tab-${index}`,
+      'aria-controls': `vertical-tabpanel-${index}`,
+    };
+}
 
 export default function Play(props: any) {
+    const [tabValue, setTabValue] = useState(1);
+    const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+        setTabValue(newValue);
+    };
 
-    const md = `## zkFischer (UI WIP)
-How to play:
+    const mdAbout = `
+zkFischer is a novel variant of [Fischer Random Chess](https://en.wikipedia.org/wiki/Fischer_random_chess).
+Compared to standard chess, where memorizing openings is important, zkFischer emphasizes skill and creativity by
+allowing you to **rearrange your starting back rank** while keeping that setup **hidden from your opponent**.
 
-1. Find a partner. Click **Reset Game**, which will end the currently ongoing game.
-1. Click **Register**. Wait for your partner to do the same.
-    * First person who registers will be White.
-    * You should be prompted to proceed to setup when both players have registered.
-1. Drag pieces onto the back rank for your desired setup. Click **Submit Setup**.
-    * You can optionally modify **boardSetupKey** (a salt) if you'd like.
-    * On success, your private board setup commitment **boardSetupInput** should populate.
-    * These values are saved in local storage and are used to generate client-side proofs when making moves.
-1. When both players have set up, the board should refresh and prompt White to make a move.
-    * If it's been more than ~10s, you can also click **Read Board** to manually pull the game state from on-chain.
-    * Hidden pieces will show up as ghosts.
-    * The identities of your pieces (except for king/pawn) are not stored on chain; they are stored in local storage. In some cases this might get corrupted.
-1. Make a move. Click **Submit Move**.
-    * If you mess up the board state, click "Read Board" to resync it.
-1. Your board should automatically refresh once it's your turn again.
-    * You can also manually sync by clicking "Read Board".
+The game runs fully on-chain using zkSNARKs to allow only legal moves. Built as part of [ZKU](https://zku.one/).
 
-Rules reminder:
-* No pawn promotion, castling, en passant, 3 fold repetition, game turn limit.
-* It's legal to have your king in check. Game ends when a king is captured.
-
-Top TODOs:
-* Make it clearer what color you're playing.
-* Split up contract to add more features.
-* Add component move validation (disallow illegal drags).
+**Github:** [https://github.com/scipen/zkFischer](https://github.com/scipen/zkFischer)
     `;
 
+    const mdHow = `
+**Quickstart:** On the "Play" tab, just follow the instructions on the right panel. 
+
+1. Find a partner. Click **Reset Game**, which will end the currently ongoing game.
+1. Click **Register** and wait for your partner to do the same.
+1. Drag pieces onto the back rank to specify your desired setup. Click **Submit Setup**.
+    * You must place 1 king, 1 queen, 2 rooks, 2 bishops, and 2 knights.
+    * Don't know how to play chess? Learn how the pieces move: [https://lichess.org/learn#/](https://lichess.org/learn#/)
+    * You can optionally modify \`boardSetupKey\` (a randomly generated salt) on the "Configure" tab if you'd like.
+1. When both players have finished setup, the game will start.
+    * Click **Submit Move** after making each move.
+    * Your back rank pieces (except for king) will all be hidden from your opponent's perspective.
+Hidden pieces show up as ghosts but must still move according to their true identity.
+    
+zkFischer special rules:
+* The game ends on king capture. It's legal to have your king in check.
+* There's currently no pawn promotion, castling, en passant, 3 fold repetition, or game turn limit.
+Some of these might be added in the future.
+
+Avoid refreshing the page for the best experience (resuming from local state is possible but might be buggy!).
+    `;
+
+    const mdFaq = `
+**Q: My piece suddenly disappeared / my local board got corrupted!**  
+**A:** Sorry, there's only limited client-side validation right now. Try refreshing the page and clicking "Load Game".  
+
+**Q: Can I play against an AI?**  
+**A:** Not currently.
+
+**Q: Can there be multiple ongoing games?**  
+**A:** No. The contract state only supports one game instance which anyone can reset by calling "Reset Game".
+
+**Q: Can I resume my game from a different browser?**  
+**A:** Not easily. The identities of your hidden pieces (everything except for king/pawn) are not stored on chain; they are stored in browser local storage.
+You will also need to export the private circuit inputs you used during game setup. Everything is stored under [localStorage](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage) prefix \`zkFischer\`.
+
+**Q: How does this work?**  
+**A:** Watch this demo video. (TBD)
+
+**Q: Will there be improvements?**  
+**A:** Maybe. First focus is on usability and bugfixes. Then on adding pawn promotion. Then on adding fun variants like [atomic](https://en.wikipedia.org/wiki/Atomic_chess).
+    `;
+
+    const phaseInfo = {
+        Register: `Click "Register" to play with a friend. For help, check the About tab.`,
+        Setup: `Set up your back rank. When you're done, click "Submit Setup".`,
+        Playing: `Click "Submit Move" once you've made your move.`,
+        Register_Done: `Waiting for opponent to register (page will automatically update)...`,
+        Setup_Done: `Waiting for opponent to finish setup (page will automatically update)...`,
+        Playing_Done: `Waiting for opponent to move (page will automatically update)...`,
+        Ended: `Game over. Click "Reset Game" to play again!`
+    }
+
     const [position, setPosition] = useState({});
-    // const [gamePhase, setGamePhase] = useState("Not connected.");
+    const [boardOrientation, setBoardOrientation] = useState("white");
+    const [gamePhase, setGamePhase] = useState(phaseInfo.Register);
+    const [sparePieces, setSparePieces] = useState(false);
 
     const [boardSetupInput, setBoardSetupInput] = useState("");
     const [boardSetupKey, setBoardSetupKey] = useState("");
 
-    // const [setupDialogOpen, setSetupDialogOpen] = useState(false);
+    const [infoMsg, setInfoMsg] = useState(phaseInfo.Register);
 
     const [callOutput, setCallOutput] = useState(false);
     const [callOutputMsg, setCallOutputMsg] = useState("");
@@ -63,15 +139,19 @@ Top TODOs:
     const [SubmittingSetup, setSubmittingSetup] = useState(false);
     const [SubmittingSetupConfirm, setSubmittingSetupConfirm] = useState(false);
     const [SubmittingMove, setSubmittingMove] = useState(false);
+    const [SubmittingMoveConfirm, setSubmittingMoveConfirm] = useState(false);
     const [ResettingGame, setResettingGame] = useState(false);
     const [ReadingBoard, setReadingBoard] = useState(false);
 
+    // the default 'onDrop' behavior
     const getPos = async (currentPosition: any) => {
         setPosition(currentPosition);
     }
 
-    const emptyPosition = {
-        a2: 'wP', b2: 'wP', c2: 'wP', d2: 'wP', e2: 'wP', f2: 'wP', g2: 'wP', h2: 'wP',
+    const setupPositionW = {
+        a2: 'wP', b2: 'wP', c2: 'wP', d2: 'wP', e2: 'wP', f2: 'wP', g2: 'wP', h2: 'wP'
+    };
+    const setupPositionB = {
         a7: 'bP', b7: 'bP', c7: 'bP', d7: 'bP', e7: 'bP', f7: 'bP', g7: 'bP', h7: 'bP'
     };
 
@@ -79,6 +159,9 @@ Top TODOs:
     const BOARD_SETUP_KEY = `zkFischer.boardSetupKey.${props.currentAccount}`;
     const BOARD_SETUP_INPUT = `zkFischer.boardSetupInput.${props.currentAccount}`;
     const LAST_GAME_POSITION = `zkFischer.lastPosition.${props.currentAccount}`;
+    const GAME_PHASE = `zkFischer.gamePhase.${props.currentAccount}`;
+    const BOARD_ORIENTATION = `zkFischer.boardOrientation.${props.currentAccount}`;
+    const SPARE_PIECES = `zkFischer.sparePieces.${props.currentAccount}`;
 
     function readLocalStorageKey(key: string, defaultValue: any) {
         let storedValue;
@@ -93,16 +176,27 @@ Top TODOs:
         return storedValue;
     }
 
+    function randInt(min: number, max: number) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    // function updateReactState(localStorageKey: string, setter: any, value: any) {
+    //     setter(value);
+    //     localStorage.setItem(localStorageKey, value);
+    // }
+
     async function onRegister(acctAddress: string, eventAddress: string) {
         console.log("onRegister: ", eventAddress);
         if (acctAddress.toLowerCase() == eventAddress.toLowerCase()) {
             try {
                 const playerId = await contract.getPlayerId();
                 const color = playerId == 0 ? 'White' : 'Black';
-                resetLocalState();
-                loadLocalState();
-                setCallOutputMsg(`You are playing ${color}. Waiting for contract to receive both players' registration.`);
+                setBoardOrientation(color.toLowerCase());
+                localStorage.setItem(BOARD_ORIENTATION, color.toLowerCase());
+                setCallOutputMsg(`Registration successful. You are playing ${color}.`);
                 setCallOutput(true);
+                setGamePhase(phaseInfo.Register_Done);
+                localStorage.setItem(GAME_PHASE, phaseInfo.Register_Done);
             } catch (error) {
                 setErrorMsg(error.toString());
                 setError(true);
@@ -111,29 +205,55 @@ Top TODOs:
         }
 
         try {
+            const playerId = await contract.getPlayerId();
             const p0 = await contract.getPlayer(0);
             const p1 = await contract.getPlayer(1);
             if (p0 != 0 && p1 != 0) {
-                await readBoard();
-                setCallOutputMsg("Both players have registered. Proceed to setup.");
-                setCallOutput(true);
+                if (playerId == 0) {
+                    setPosition(setupPositionW);
+                    localStorage.setItem(LAST_GAME_POSITION, JSON.stringify(setupPositionW));
+                } else {
+                    setPosition(setupPositionB);
+                    localStorage.setItem(LAST_GAME_POSITION, JSON.stringify(setupPositionB));
+                }
+                setSparePieces(true);
+                localStorage.setItem(SPARE_PIECES, "true");
+                setGamePhase(phaseInfo.Setup);
+                localStorage.setItem(GAME_PHASE, phaseInfo.Setup);
             }
         } catch (error) {
-            setErrorMsg(error.toString());
-            setError(true);
+            console.error(error.toString());
+            // hack: player 2 will get this event before registering so ignore errors
+            // all events need to avoid contract calls if user is not playing
+            // setErrorMsg(error.toString());
+            // setError(true);
         };
     }
 
     async function onSetupBoard(acctAddress: string, eventAddress: string) {
         console.log("onSetupBoard: ", eventAddress);
         try {
-            const hash0 = await contract.getSetupHash(0);
-            const hash1 = await contract.getSetupHash(1);
-            if (hash0 != 0 && hash1 != 0) {
+            const playerId = await contract.getPlayerId();
+            const hashes = [await contract.getSetupHash(0), await contract.getSetupHash(1)];
+            if (hashes[playerId] != 0) {
+                setCallOutputMsg("Setup successful.");
+                setCallOutput(true);
+                setGamePhase(phaseInfo.Setup_Done);
+                localStorage.setItem(GAME_PHASE, phaseInfo.Setup_Done);
+            }
+            if (hashes[0] != 0 && hashes[1] != 0) {
                 await readBoard();
-                // winner already got winner message
                 setCallOutputMsg("Both players have finished setup. It's now White's turn.");
                 setCallOutput(true);
+                setSparePieces(false);
+                localStorage.setItem(SPARE_PIECES, "false");
+                if (playerId == 0) {
+                    setGamePhase(phaseInfo.Playing);
+                    localStorage.setItem(GAME_PHASE, phaseInfo.Playing);
+                } else {
+                    setGamePhase(phaseInfo.Playing_Done);
+                    localStorage.setItem(GAME_PHASE, phaseInfo.Playing_Done);
+                }
             }
         } catch (error) {
             setErrorMsg(error.toString());
@@ -144,24 +264,43 @@ Top TODOs:
 
     async function onMove(acctAddress: string, eventAddress: string) {
         console.log("onMove: ", eventAddress);
-        if (acctAddress.toLowerCase() != eventAddress.toLowerCase()) {
-            try {
-                await readBoard();
-                setCallOutputMsg("Opponent has moved, it's now your turn.");
+        // don't overwrite game end msg if race condition
+        if (gamePhase != phaseInfo.Ended) {
+            if (acctAddress.toLowerCase() != eventAddress.toLowerCase()) {
+                try {
+                    await readBoard();
+                    // todo: more race condition
+                    if (gamePhase != phaseInfo.Ended) {
+                        setCallOutputMsg("Opponent has moved, it's now your turn.");
+                        setCallOutput(true);
+                        setGamePhase(phaseInfo.Playing);
+                        localStorage.setItem(GAME_PHASE, phaseInfo.Playing);
+                    }
+                } catch (error) {
+                    setErrorMsg(error.toString());
+                    setError(true);
+                };
+            } else if (acctAddress.toLowerCase() == eventAddress.toLowerCase()) {
+                setCallOutputMsg("Move successful.");
                 setCallOutput(true);
-            } catch (error) {
-                setErrorMsg(error.toString());
-                setError(true);
-            };
+                setGamePhase(phaseInfo.Playing_Done);
+                localStorage.setItem(GAME_PHASE, phaseInfo.Playing_Done);
+            }
         }
+        setSubmittingMoveConfirm(false);
     }
 
     async function onGameEnd(acctAddress: string, eventAddress: string) {
         console.log("onGameEnd: ", eventAddress);
         if (acctAddress.toLowerCase() != eventAddress.toLowerCase()) {
-            setCallOutputMsg("Game over, you came in 2nd place.");
+            setCallOutputMsg("You came in 2nd place.");
+            setCallOutput(true);
+        } else {
+            setCallOutputMsg("Congratulations, you win!");
             setCallOutput(true);
         }
+        setGamePhase(phaseInfo.Ended);
+        localStorage.setItem(GAME_PHASE, phaseInfo.Ended);
     }
 
     useEffect(() => {
@@ -171,17 +310,26 @@ Top TODOs:
         }
     }, [props.currentAccount]);
 
+    useEffect(() => {
+        setInfoMsg(gamePhase);
+    }, [gamePhase]);
+
     function loadLocalState() {
         setBoardSetupInput(localStorage.getItem(BOARD_SETUP_INPUT) || "");
-        setBoardSetupKey(localStorage.getItem(BOARD_SETUP_KEY) || "1000");
-        let currentPosition = readLocalStorageKey(LAST_GAME_POSITION, emptyPosition);
-        setPosition(currentPosition);
+        setBoardSetupKey(localStorage.getItem(BOARD_SETUP_KEY) || randInt(1000000000, 1000000000000).toString());
+        setPosition(readLocalStorageKey(LAST_GAME_POSITION, {}));
+        setGamePhase(localStorage.getItem(GAME_PHASE) || phaseInfo.Register);
+        setBoardOrientation(localStorage.getItem(BOARD_ORIENTATION) || "white");
+        setSparePieces(readLocalStorageKey(SPARE_PIECES, false));
     }
 
     function resetLocalState() {
         localStorage.removeItem(BOARD_SETUP_INPUT);
         localStorage.removeItem(BOARD_SETUP_KEY);
         localStorage.removeItem(LAST_GAME_POSITION);
+        localStorage.removeItem(GAME_PHASE);
+        localStorage.removeItem(BOARD_ORIENTATION);
+        localStorage.removeItem(SPARE_PIECES);
     }
 
     const register = async (event: any) => {
@@ -190,6 +338,8 @@ Top TODOs:
         setCallOutput(false);
         setRegistering(true);
         try {
+            resetLocalState();
+            loadLocalState();
             await contract.register();
             setRegistering(false);
             setRegisteringConfirm(true);
@@ -209,12 +359,11 @@ Top TODOs:
         try {
             const playerId = await contract.getPlayerId();
             const response = await contract.pubSubmitSetup(position, boardSetupKey, playerId);
-            setCallOutputMsg(`Setup successful. boardSetupInput should populate with: ${response}. Waiting for contract to receive both players' setup.`);
             setCallOutput(true);
+            setBoardSetupInput(response);
+            setBoardSetupKey(boardSetupKey);
             localStorage.setItem(BOARD_SETUP_INPUT, response);
             localStorage.setItem(BOARD_SETUP_KEY, boardSetupKey);
-            setBoardSetupInput(localStorage.getItem(BOARD_SETUP_INPUT) || "");
-            setBoardSetupKey(localStorage.getItem(BOARD_SETUP_KEY) || "1000");
             const playerSetupPosition = gameUtils.filterSetupPosition(position, playerId);
             setPosition(playerSetupPosition);
             localStorage.setItem(LAST_GAME_POSITION, JSON.stringify(playerSetupPosition));
@@ -271,8 +420,8 @@ Top TODOs:
             setPosition(newPosition);
             localStorage.setItem(LAST_GAME_POSITION, JSON.stringify(newPosition));
 
-            setCallOutputMsg(response);
-            setCallOutput(true);
+            setSubmittingMove(false);
+            setSubmittingMoveConfirm(true);
         } catch (error) {
             setErrorMsg(error.toString());
             setError(true);
@@ -309,7 +458,7 @@ Top TODOs:
         setCallOutput(false);
         setReadingBoard(true);
         try {
-            const currentPosition = readLocalStorageKey(LAST_GAME_POSITION, emptyPosition);
+            const currentPosition = readLocalStorageKey(LAST_GAME_POSITION, {});
             const chainPosition = await contract.readBoard();
             const playerId = await contract.getPlayerId();
             const computedPosition = gameUtils.computePlayerPosition(currentPosition, chainPosition, playerId);
@@ -333,92 +482,188 @@ Top TODOs:
     };
 
     return (
-        <Box
-            component="form"
-            sx={{
-                "& .MuiTextField-root": { m: 1, width: "95%" },
-                width: "99%", margin: 'auto'
-            }}
-        >
-            <ReactMarkdown children={md}/>
-            {/* <Typography>Game phase: {gamePhase}</Typography> */}
-            <Chessboard position={position} sparePieces getPosition={getPos} />
-            {/* <Game position={position} getPosition={getPos}/> */}
-            <br />
-            <Button
-                onClick={register}
-                variant="contained">
-                Register
-            </Button>
-            <TextField
-                id="input-boardSetupKey"
-                label="boardSetupKey"
-                type="text"
-                placeholder="Enter a non-negative integer. Save it if you'll change browsers."
-                InputLabelProps={{
-                    shrink: true,
+        <Box>
+            <Grid container spacing={1}>
+                <Grid item xs={2}>
+                    <Tabs
+                        orientation="vertical"
+                        variant="scrollable"
+                        value={tabValue}
+                        onChange={handleChange}
+                        aria-label="Vertical tabs example"
+                        sx={{ borderRight: 1, borderColor: 'divider' }}
+                    >
+                        <Tab label="About" {...a11yProps(0)} />
+                        <Tab label="Play" {...a11yProps(1)} />
+                        <Tab label="Configure" {...a11yProps(2)} />
+                    </Tabs>
+                </Grid>
+                <Grid item xs={10}>
+                    <TabPanel value={tabValue} index={0}>
+                        <Grid container spacing={1} direction="column">
+                            <Grid item>
+                                <Paper>
+                                    <Typography align="center">About</Typography>
+                                </Paper>
+                            </Grid>
+                            <Grid item>
+                                <ReactMarkdown children={mdAbout}/>
+                            </Grid>
+                            <Grid item>
+                                <Paper>
+                                    <Typography align="center">How to Play</Typography>
+                                </Paper>
+                            </Grid>
+                            <Grid item>
+                                <ReactMarkdown children={mdHow}/>
+                            </Grid>
+                            <Grid item>
+                                <Paper>
+                                    <Typography align="center">FAQ & Troubleshooting</Typography>
+                                </Paper>
+                            </Grid>
+                            <Grid item>
+                                <ReactMarkdown children={mdFaq}/>
+                            </Grid>
+                        </Grid> 
+                    </TabPanel>
+                    <TabPanel value={tabValue} index={1}>
+                        <Grid container spacing={0}>
+                            <Grid item xs={8}>
+                                <Chessboard position={position} sparePieces={sparePieces} getPosition={getPos} orientation={boardOrientation} />
+                            </Grid>
+                            <Grid item xs={4} spacing={4} container direction="column">
+                                <Grid item container spacing={1} direction="column" wrap="nowrap">
+                                    <Grid item>
+                                        <Paper>    
+                                            <Typography align="center">Game status</Typography>
+                                        </Paper>
+                                    </Grid>
+                                    <Grid item>
+                                        {callOutput ? <Alert severity="success" sx={{ textAlign: "left" }}>{callOutputMsg}</Alert> : <div />}
+                                        <Alert severity="info" sx={{ textAlign: "left" }}>{infoMsg}</Alert>
+                                        {gamePhase==phaseInfo.Register ? <Alert severity="info" sx={{ textAlign: "left" }}>
+                                            At least one player should click "Reset Game" below <strong>before either player registers.</strong>
+                                        </Alert> : <div />}
+                                        {error ? <Alert severity="error" sx={{ textAlign: "left", "word-wrap": "break-word" }}>{errorMsg}</Alert> : <div />}
+                                    </Grid>
+                                    <Grid item alignSelf="center">
+                                        {gamePhase == phaseInfo.Register ? 
+                                            <Button
+                                                onClick={register}
+                                                variant="contained">
+                                                Register
+                                            </Button>
+                                        : <div />}
+                                        {gamePhase == phaseInfo.Setup ? 
+                                            <Button
+                                                onClick={submitSetup}
+                                                variant="contained">
+                                                Submit Setup
+                                            </Button>
+                                        : <div />}
+                                        {gamePhase == phaseInfo.Playing ? 
+                                            <Button
+                                                onClick={submitMove}
+                                                variant="contained">
+                                                Submit Move
+                                            </Button>
+                                        : <div />}
+                                    </Grid>
+                                </Grid>
+                                <Grid item container spacing={1} direction="column" wrap="nowrap">
+                                    <Grid item>
+                                        <Paper>    
+                                            <Typography align="center">Other controls</Typography>
+                                        </Paper>
+                                    </Grid>
+                                    <Grid item container spacing={2} direction="column" wrap="nowrap">
+                                        <Grid item>
+                                            <Alert severity="info" icon={false} sx={{ textAlign: "left" }}>
+                                                {`Click "Reset Game" to end the current game and reset the contract state. This might interrupt other players!`}
+                                            </Alert>
+                                        </Grid>
+                                        <Grid item alignSelf="center">
+                                            <Button
+                                                onClick={resetGame}
+                                                variant="contained">
+                                                Reset Game
+                                            </Button>
+                                        </Grid>
+                                        <Grid item>
+                                            <Alert severity="info" icon={false} sx={{ textAlign: "left" }}>
+                                                {`Click "Load Game" to attempt to resync your game state with the blockchain. Local board changes will be lost.`}
+                                            </Alert>
+                                        </Grid>
+                                        <Grid item alignSelf="center">
+                                            <Button
+                                                onClick={readBoard}
+                                                variant="contained">
+                                                Load Game
+                                            </Button>
+                                        </Grid>
+                                    </Grid>
+                                </Grid>
+                            </Grid>
+                        </Grid>
+                    </TabPanel>
+                    <TabPanel value={tabValue} index={2}>
+                        <Grid container spacing={1} direction="column">
+                            <Grid item>
+                                These parameters are used for generating zkSNARK proofs during the game.
+                            </Grid>
+                            <Grid item>
+                                <TextField
+                                    id="input-boardSetupKey"
+                                    label="boardSetupKey"
+                                    type="text"
+                                    placeholder="Enter a non-negative integer."
+                                    InputLabelProps={{
+                                        shrink: true,
+                                    }}
+                                    variant="filled"
+                                    onChange={boardSetupKeyHandler}
+                                    value={boardSetupKey}
+                                    sx={{ "width": "50%" }}
+                                />
+                            </Grid>
+                            <Grid item>
+                                <TextField
+                                    id="input-boardSetupInput"
+                                    label="boardSetupInput"
+                                    type="text"
+                                    disabled
+                                    placeholder="This value will populate after calling submitSetup."
+                                    InputLabelProps={{
+                                        shrink: true,
+                                    }}
+                                    variant="filled"
+                                    onChange={boardSetupInputHandler}
+                                    value={boardSetupInput}
+                                    sx={{ "width": "50%" }}
+                                />
+                            </Grid>
+                        </Grid>
+                    </TabPanel>
+                </Grid>
+            </Grid>
+            <Box
+                component="form"
+                sx={{
+                    "& .MuiTextField-root": { m: 1, width: "95%" },
+                    width: "99%", margin: 'auto'
                 }}
-                variant="filled"
-                onChange={boardSetupKeyHandler}
-                value={boardSetupKey}
-            />
-            {/* <Modal
-                open={setupDialogOpen}
-                onClose={() => {setSetupDialogOpen(false);}}
-                aria-labelledby="modal-modal-title"
-                aria-describedby="modal-modal-description"
-            >
-                <Box>
-                    <Typography id="modal-modal-title" variant="h6" component="h2">
-                    Text in a modal
-                    </Typography>
-                    <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-                    Duis mollis, est non commodo luctus, nisi erat porttitor ligula.
-                    </Typography>
-                </Box>
-            </Modal> */}
-            <TextField
-                id="input-boardSetupInput"
-                label="boardSetupInput"
-                type="text"
-                placeholder="This value will populate after calling submitSetup. Save it if you'll change browsers."
-                InputLabelProps={{
-                    shrink: true,
-                }}
-                variant="filled"
-                onChange={boardSetupInputHandler}
-                value={boardSetupInput}
-            />
-            <Button
-                onClick={submitSetup}
-                variant="contained">
-                Submit Setup
-            </Button>
-            <Button
-                onClick={submitMove}
-                variant="contained">
-                Submit Move
-            </Button>
-            <Button
-                onClick={resetGame}
-                variant="contained">
-                Reset Game
-            </Button>
-            <Button
-                onClick={readBoard}
-                variant="contained">
-                Read Board
-            </Button>
-            <br /><br />
-            {Registering ? <Loading text="Registering..." /> : <div />}
-            {RegisteringConfirm ? <Loading text="Waiting for registration confirmation..." /> : <div />}
-            {SubmittingSetup ? <Loading text="Submitting setup..." /> : <div />}
-            {SubmittingSetupConfirm ? <Loading text="Waiting for setup confirmation..." /> : <div />}
-            {SubmittingMove ? <Loading text="Submitting move..." /> : <div />}
-            {ResettingGame ? <Loading text="Resetting game..." /> : <div />}
-            {ReadingBoard ? <Loading text="Reading board..." /> : <div />}
-            {error ? <Alert severity="error" sx={{ textAlign: "left" }}>{errorMsg}</Alert> : <div />}
-            {callOutput ? <Alert severity="success" sx={{ textAlign: "left" }}>{callOutputMsg}</Alert> : <div />}
+            >   
+                <br /><br />
+                {Registering ? <Loading text="Registering..." /> : <div />}
+                {RegisteringConfirm ? <Loading text="Waiting for registration confirmation..." /> : <div />}
+                {SubmittingSetup ? <Loading text="Submitting setup..." /> : <div />}
+                {SubmittingSetupConfirm ? <Loading text="Waiting for setup confirmation..." /> : <div />}
+                {SubmittingMove ? <Loading text="Submitting move..." /> : <div />}
+                {SubmittingMoveConfirm ? <Loading text="Waiting for move confirmation..." /> : <div />}
+                {ResettingGame ? <Loading text="Resetting game..." /> : <div />}
+                {ReadingBoard ? <Loading text="Reading board..." /> : <div />}
+            </Box>
         </Box>
     );
 }

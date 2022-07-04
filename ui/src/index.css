@@ -17,6 +17,10 @@ img {
   aspect-ratio: 1;
 }
 
+a {
+  color: hotpink;
+}
+
 .MuiAlert-message {
   min-width: 0;
   word-wrap: break-word;

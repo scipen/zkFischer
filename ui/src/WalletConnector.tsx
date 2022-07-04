@@ -2,9 +2,11 @@ import Fab from '@mui/material/Fab';
 import Backdrop from '@mui/material/Backdrop';
 import { useEffect, useState } from 'react';
 
-// const devnetChainId = '0x539'
-const devnetChainId = '0x635ae020'
-// const testnetChainId = '0x6357d2e0'
+// const devnetChainId = '0x539'  // hardhat
+// const devnetChainId = '0x635ae020'  // harmony devnet
+const devnetChainId = '0x89'  // polgyon mainnet
+// const testnetChainId = '0x6357d2e0'  // harmony testnet
+const expectedNetwork = 'Polygon Mainnet'
 
 export default function WalletConnector(props: any) {
   const { ethereum } = window;
@@ -140,7 +142,7 @@ export default function WalletConnector(props: any) {
           bottom: (theme) => theme.spacing(2),
           right: (theme) => theme.spacing(2)
         }}>
-          Wrong Network
+          Wrong Network (expected: {expectedNetwork})
         </Fab>
       </div>
     )

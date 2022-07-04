@@ -5,7 +5,8 @@ import Piece from './Piece';
 import Chessboard from './index';
 
 function SparePiecesTop() {
-  return <SparePieces top />;
+  // return <SparePieces top />;
+  return <div />;
 }
 
 function SparePiecesBottom() {
@@ -32,8 +33,10 @@ class SparePieces extends Component {
         {context => {
           const spares =
             this.getOrientation(context.orientation) === 'black'
-              ? ['bK', 'bQ', 'bR', 'bB', 'bN', 'bP']
-              : ['wK', 'wQ', 'wR', 'wB', 'wN', 'wP'];
+              ? ['bK', 'bQ', 'bR', 'bB', 'bN' ]
+              : ['wK', 'wQ', 'wR', 'wB', 'wN' ];
+              // ? ['bK', 'bQ', 'bR', 'bB', 'bN', 'bP']
+              // : ['wK', 'wQ', 'wR', 'wB', 'wN', 'wP'];
 
           return (
             <div style={spareStyles(context.width)}>

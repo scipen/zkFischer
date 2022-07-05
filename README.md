@@ -1,3 +1,7 @@
+# zkFischer
+
+<img src="ui/public/gameplay.png" width="512" height="512" />
+
 zkFischer is a variant of [Fischer random chess](https://en.wikipedia.org/wiki/Fischer_random_chess) using zkSNARKs.
 
 In this variant, you start by rearranging your back rank however you want. All pieces will be kept secret except for your king. During gameplay, you will generate ZKPs to show that you are only making valid moves. The game ends when a king is captured.

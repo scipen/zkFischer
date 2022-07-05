@@ -24,7 +24,7 @@ Harmony devnet contracts:
 "devnet_zkFischer": "0x0530f1E594931d8F33E4718fFB0909635D6c02b8",
 ```
 
-Boilerplate sources:
+Referenced sources:
 * https://github.com/socathie/zkApp/
 * https://github.com/enu-kuro/zku-final-project/
 
@@ -35,7 +35,7 @@ Boilerplate sources:
 
 In `hardhat/`, run `npm i` and `npm run test:full`. In `ui/`, run `npm i` and `npm run copy`.
 
-To deploy to devnet, create `hardhat/.env` and add `HARMONY_PRIVATE_KEY=yourKey`. Then run `npx hardhat deploy --network devnet`. To test locally, go to `hardhat/` and run `npx hardhat node`.
+To deploy to devnet, create `hardhat/.env` and add `DEPLOYER_PRIVATE_KEY=yourKey`. Then run `npx hardhat deploy --network devnet`. To test locally, go to `hardhat/` and run `npx hardhat node`. Other network configurations are in `hardhat/hardhat.config.js`.
 
 Manually update `ui/src/artifacts/address.json` with your contract addresses and run `npm start`. Depending on your network, you may have to update some network specific configs in `ui/src/`.
 

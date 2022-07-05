@@ -9,7 +9,7 @@ require('dotenv').config();
 // To export your private key from Metamask, open Metamask and
 // go to Account Details > Export Private Key
 // Be aware of NEVER putting real Ether into testing accounts
-const HARMONY_PRIVATE_KEY = process.env["HARMONY_PRIVATE_KEY"];
+const DEPLOYER_PRIVATE_KEY = process.env["DEPLOYER_PRIVATE_KEY"];
 
 module.exports = {
     solidity: {
@@ -28,22 +28,22 @@ module.exports = {
         devnet: {
             url: "https://api.s0.ps.hmny.io",
             chainId: 1666900000,
-            accounts: [`${HARMONY_PRIVATE_KEY}`]
+            accounts: [`${DEPLOYER_PRIVATE_KEY}`]
         },
         testnet: {
             url: "https://api.s0.b.hmny.io",
             chainId: 1666700000,
-            accounts: [`${HARMONY_PRIVATE_KEY}`]
+            accounts: [`${DEPLOYER_PRIVATE_KEY}`]
         },
         mainnet: {
             url: "https://api.harmony.one",
             chainId: 1666600000,
-            accounts: [`${HARMONY_PRIVATE_KEY}`]
+            accounts: [`${DEPLOYER_PRIVATE_KEY}`]
         },
         polygon: {
             url: "https://polygon-rpc.com",
             chainId: 137,
-            accounts: [`${HARMONY_PRIVATE_KEY}`]
+            accounts: [`${DEPLOYER_PRIVATE_KEY}`]
         }
     },
     namedAccounts: {

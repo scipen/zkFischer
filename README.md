@@ -1,5 +1,7 @@
 # zkFischer
 
+**Play here:** [https://zk-fischer.vercel.app/](https://zk-fischer.vercel.app/) (only one active game at a time, globally)
+
 <img src="ui/public/gameplay.png" width="512" height="512" />
 
 zkFischer is a variant of [Fischer random chess](https://en.wikipedia.org/wiki/Fischer_random_chess) using zkSNARKs.
@@ -7,8 +9,6 @@ zkFischer is a variant of [Fischer random chess](https://en.wikipedia.org/wiki/F
 In this variant, you start by rearranging your back rank however you want. All pieces will be kept secret except for your king. During gameplay, you will generate ZKPs to show that you are only making valid moves. The game ends when a king is captured.
 
 Currently, there is no pawn promotion or en passant due to hitting contract bytecode size limitations. There is also no castling, 3-fold repetition, or 50 move rule. It is legal to move your king into check.
-
-Play here: [https://zk-fischer.vercel.app/](https://zk-fischer.vercel.app/) (only one active game at a time, globally)
 
 Polygon mainnet contracts:
 ```
@@ -27,6 +27,8 @@ Harmony devnet contracts:
 Boilerplate sources:
 * https://github.com/socathie/zkApp/
 * https://github.com/enu-kuro/zku-final-project/
+
+**Play here:** [https://zk-fischer.vercel.app/](https://zk-fischer.vercel.app/) (only one active game at a time, globally)
 
 
 ## Building

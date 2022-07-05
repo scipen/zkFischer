@@ -2,11 +2,57 @@ import Fab from '@mui/material/Fab';
 import Backdrop from '@mui/material/Backdrop';
 import { useEffect, useState } from 'react';
 
-// const devnetChainId = '0x539'  // hardhat
-// const devnetChainId = '0x635ae020'  // harmony devnet
-const devnetChainId = '0x89'  // polgyon mainnet
-// const testnetChainId = '0x6357d2e0'  // harmony testnet
-const expectedNetwork = 'Polygon Mainnet'
+const networks: {[key: string]: any} = {
+  hardhat: {
+    chainId: '0x539',
+    chainName: 'Hardhat'
+  },
+  harmonyDevnet: {
+    chainId: '0x635ae020',
+    chainName: 'Harmony Devnet',
+    nativeCurrency: {
+      name: 'ONE',
+      symbol: 'ONE',
+      decimals: 18
+    },
+    rpcUrls: ['https://api.s0.ps.hmny.io'],
+    blockExplorerUrls: ['https://explorer.ps.hmny.io/']
+  },
+  harmonyTestnet: {
+    chainId: '0x6357d2e0',
+    chainName: 'Harmony Testnet',
+    nativeCurrency: {
+      name: 'ONE',
+      symbol: 'ONE',
+      decimals: 18
+    },
+    rpcUrls: ['https://api.s0.b.hmny.io'],
+    blockExplorerUrls: ['https://explorer.pops.one']
+  },
+  harmonyMainnet: {
+    chainId: '0x63564c40',
+    chainName: 'Harmony Mainnet',
+    nativeCurrency: {
+      name: 'ONE',
+      symbol: 'ONE',
+      decimals: 18
+    },
+    rpcUrls: ['https://api.harmony.one'],
+    blockExplorerUrls: ['https://explorer.harmony.one/']
+  },
+  polygonMainnet: {
+    chainId: '0x89',
+    chainName: 'Polygon Mainnet',
+    nativeCurrency: {
+      name: 'MATIC',
+      symbol: 'MATIC',
+      decimals: 18
+    },
+    rpcUrls: ['https://polygon-rpc.com/'],
+    blockExplorerUrls: ['https://polygonscan.com/']
+  },
+}
+const expectedNetwork: any = networks.polygonMainnet;
 
 export default function WalletConnector(props: any) {
   const { ethereum } = window;
@@ -55,18 +101,18 @@ export default function WalletConnector(props: any) {
     let chainId = await ethereum.request({ method: 'eth_chainId' });
     console.log("Chain ID:", chainId, parseInt(chainId));
 
-    setCorrectChain(chainId === devnetChainId);
+    setCorrectChain(chainId === expectedNetwork.chainId);
   }
 
   const changeChainId = async () => {
     let chainId = await ethereum.request({ method: 'eth_chainId' });
 
-    if (chainId !== devnetChainId) {
+    if (chainId !== expectedNetwork.chainId) {
       try {
         await ethereum.request({
           method: 'wallet_switchEthereumChain',
           params: [{
-            chainId: devnetChainId
+            chainId: expectedNetwork.chainId
           }], // chainId must be in hexadecimal numbers
         });
         chainId = await ethereum.request({ method: 'eth_chainId' });
@@ -77,19 +123,7 @@ export default function WalletConnector(props: any) {
           try {
             await ethereum.request({
               method: 'wallet_addEthereumChain',
-              params: [
-                {
-                  chainId: devnetChainId,
-                  chainName: 'Harmony Testnet',
-                  nativeCurrency: {
-                    name: 'ONE',
-                    symbol: 'ONE',
-                    decimals: 18
-                  },
-                  rpcUrls: ['https://api.s0.b.hmny.io'],
-                  blockExplorerUrls: ['https://explorer.pops.one']
-                },
-              ],
+              params: [expectedNetwork],
             });
           } catch (addError) {
             console.error(addError);
@@ -99,7 +133,7 @@ export default function WalletConnector(props: any) {
       }
       window.location.reload();
     }
-    setCorrectChain(chainId === devnetChainId);
+    setCorrectChain(chainId === expectedNetwork.chainId);
   }
 
   const changeAccount = async () => {
@@ -142,7 +176,7 @@ export default function WalletConnector(props: any) {
           bottom: (theme) => theme.spacing(2),
           right: (theme) => theme.spacing(2)
         }}>
-          Wrong Network (expected: {expectedNetwork})
+          Wrong Network (expected: {expectedNetwork.chainName})
         </Fab>
       </div>
     )

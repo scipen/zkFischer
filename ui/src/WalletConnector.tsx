@@ -16,7 +16,7 @@ const networks: {[key: string]: any} = {
       decimals: 18
     },
     rpcUrls: ['https://api.s0.ps.hmny.io'],
-    blockExplorerUrls: ['https://explorer.ps.hmny.io/']
+    blockExplorerUrls: ['https://explorer.ps.hmny.io']
   },
   harmonyTestnet: {
     chainId: '0x6357d2e0',
@@ -38,7 +38,7 @@ const networks: {[key: string]: any} = {
       decimals: 18
     },
     rpcUrls: ['https://api.harmony.one'],
-    blockExplorerUrls: ['https://explorer.harmony.one/']
+    blockExplorerUrls: ['https://explorer.harmony.one']
   },
   polygonMainnet: {
     chainId: '0x89',
@@ -48,8 +48,8 @@ const networks: {[key: string]: any} = {
       symbol: 'MATIC',
       decimals: 18
     },
-    rpcUrls: ['https://polygon-rpc.com/'],
-    blockExplorerUrls: ['https://polygonscan.com/']
+    rpcUrls: ['https://polygon-rpc.com'],
+    blockExplorerUrls: ['https://polygonscan.com']
   },
 }
 const expectedNetwork: any = networks.polygonMainnet;

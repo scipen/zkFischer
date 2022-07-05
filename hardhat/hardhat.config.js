@@ -41,7 +41,7 @@ module.exports = {
             accounts: [`${HARMONY_PRIVATE_KEY}`]
         },
         polygon: {
-            url: "https://polygon-rpc.com/",
+            url: "https://polygon-rpc.com",
             chainId: 137,
             accounts: [`${HARMONY_PRIVATE_KEY}`]
         }

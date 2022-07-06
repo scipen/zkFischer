@@ -6,4 +6,5 @@ cp ../hardhat/circuits/build/verifyMove_js/verifyMove.wasm public/
 
 cp ../hardhat/artifacts/contracts/verifyPlacement_verifier.sol/VerifyPlacementVerifier.json src/artifacts/
 cp ../hardhat/artifacts/contracts/verifyMove_verifier.sol/VerifyMoveVerifier.json src/artifacts/
-cp ../hardhat/artifacts/contracts/zkFischer.sol/zkFischer.json src/artifacts/
+cp ../hardhat/artifacts/contracts/ZkFischerUtils.sol/ZkFischerUtils.json src/artifacts/
+cp ../hardhat/artifacts/contracts/ZkFischer.sol/ZkFischer.json src/artifacts/

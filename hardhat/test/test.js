@@ -70,8 +70,12 @@ describe("zkFischer contract test", function () {
         let moveverifier = await moveVerifier.deploy();
         await moveverifier.deployed();
 
-        ZkFischer = await ethers.getContractFactory("zkFischer");
-        zkFischer = await ZkFischer.deploy(placementverifier.address, moveverifier.address);
+        ZkFischerUtils = await ethers.getContractFactory("ZkFischerUtils");
+        zkFischerUtils = await ZkFischerUtils.deploy();
+        await zkFischerUtils.deployed();
+
+        ZkFischer = await ethers.getContractFactory("ZkFischer");
+        zkFischer = await ZkFischer.deploy(placementverifier.address, moveverifier.address, zkFischerUtils.address);
         await zkFischer.deployed();
 
         let signers = await ethers.getSigners();
@@ -80,31 +84,34 @@ describe("zkFischer contract test", function () {
         p2 = zkFischer.connect(signers[2]);
     });
 
-    it("2 different players can register", async function () {
-        await p0.register();
-        await expect(p0.register()).to.be.reverted;
+    it("2 different players can register each game", async function () {
+        const gameId = 0;
+        await p0.register(gameId);
+        await expect(p0.register(gameId)).to.be.reverted;
+        await p1.register(gameId);
+        await expect(p2.register(gameId)).to.be.reverted;
 
-        await p1.register();
-        await expect(p2.register()).to.be.reverted;
+        await p2.register(gameId+1);
     });
 
     it("Fool's mate", async function () {
-        await p0.register();
-        await p1.register();
+        const gameId = 0;
+        await p0.register(gameId);
+        await p1.register(gameId);
 
         let p0_board = [PIECES["R"], PIECES["N"], PIECES["B"], PIECES["Q"], PIECES["K"], PIECES["B"], PIECES["N"], PIECES["R"]];
         let p0_setupKey = 1000;
         let p0_gameKey = 0;
         let p0_kingFile = 4;
         let p0_setup = await genSetupArgs(p0_board, p0_setupKey, p0_gameKey, p0_kingFile);
-        await p0.setupBoard(p0_setup[0], p0_setup[1], p0_setup[2], p0_setup[3]);
+        await p0.setupBoard(gameId, p0_setup);
 
         let p1_board = [PIECES["R"], PIECES["N"], PIECES["B"], PIECES["Q"], PIECES["K"], PIECES["B"], PIECES["N"], PIECES["R"]];
         let p1_setupKey = 2000;
         let p1_gameKey = 0;
         let p1_kingFile = 4;
         let p1_setup = await genSetupArgs(p1_board, p1_setupKey, p1_gameKey, p1_kingFile);
-        await p1.setupBoard(p1_setup[0], p1_setup[1], p1_setup[2], p1_setup[3]);
+        await p1.setupBoard(gameId, p1_setup);
 
         let p0_move, p0_moveType, p0_pieceFile, p0_fromSq, p0_toSq;
         let p1_move, p1_moveType, p1_pieceFile, p1_fromSq, p1_toSq;
@@ -112,17 +119,17 @@ describe("zkFischer contract test", function () {
         // f3
         p0_fromSq = sqToCoords('f', 2);
         p0_toSq = sqToCoords('f', 3);
-        await p0.move(p0_fromSq, p0_toSq, ...DUMMY_MOVE_ARGS);
+        await p0.move(gameId, p0_fromSq, p0_toSq, DUMMY_MOVE_ARGS);
 
         // ..e6
         p1_fromSq = sqToCoords('e', 7);
         p1_toSq = sqToCoords('e', 6);
-        await p1.move(p1_fromSq, p1_toSq, ...DUMMY_MOVE_ARGS);
+        await p1.move(gameId, p1_fromSq, p1_toSq, DUMMY_MOVE_ARGS);
 
         // g4
         p0_fromSq = sqToCoords('g', 2);
         p0_toSq = sqToCoords('g', 4);
-        await p0.move(p0_fromSq, p0_toSq, ...DUMMY_MOVE_ARGS);
+        await p0.move(gameId, p0_fromSq, p0_toSq, DUMMY_MOVE_ARGS);
 
         // ..Qh4# (more moves below since need king capture to end game)
         p1_moveType = "diag-2+";
@@ -130,7 +137,7 @@ describe("zkFischer contract test", function () {
         p1_fromSq = sqToCoords('d', 8);
         p1_toSq = sqToCoords('h', 4);
         p1_move = await genMoveArgs(p1_moveType, p1_pieceFile, p1_board, p1_setupKey, p1_gameKey);
-        await p1.move(p1_fromSq, p1_toSq, ...p1_move);
+        await p1.move(gameId, p1_fromSq, p1_toSq, p1_move);
 
         // Na3
         p0_moveType = "knight";
@@ -138,7 +145,7 @@ describe("zkFischer contract test", function () {
         p0_fromSq = sqToCoords('b', 1);
         p0_toSq = sqToCoords('a', 3);
         p0_move = await genMoveArgs(p0_moveType, p0_pieceFile, p0_board, p0_setupKey, p0_gameKey);
-        await p0.move(p0_fromSq, p0_toSq, ...p0_move);
+        await p0.move(gameId, p0_fromSq, p0_toSq, p0_move);
 
         // ..Qg6 (error: not how queen moves)
         p1_moveType = "diag-2+";
@@ -146,7 +153,7 @@ describe("zkFischer contract test", function () {
         p1_fromSq = sqToCoords('h', 4);
         p1_toSq = sqToCoords('g', 6);
         p1_move = await genMoveArgs(p1_moveType, p1_pieceFile, p1_board, p1_setupKey, p1_gameKey);
-        await expect(p1.move(p1_fromSq, p1_toSq, ...p1_move)).to.be.reverted;
+        await expect(p1.move(gameId, p1_fromSq, p1_toSq, p1_move)).to.be.reverted;
 
         // ..Qxh1 (error: can't move through pieces)
         p1_moveType = "orthog-2+";
@@ -154,7 +161,7 @@ describe("zkFischer contract test", function () {
         p1_fromSq = sqToCoords('h', 4);
         p1_toSq = sqToCoords('h', 1);
         p1_move = await genMoveArgs(p1_moveType, p1_pieceFile, p1_board, p1_setupKey, p1_gameKey);
-        await expect(p1.move(p1_fromSq, p1_toSq, ...p1_move)).to.be.reverted;
+        await expect(p1.move(gameId, p1_fromSq, p1_toSq, p1_move)).to.be.reverted;
 
         // ..Qxe1
         p1_moveType = "diag-2+";
@@ -162,12 +169,12 @@ describe("zkFischer contract test", function () {
         p1_fromSq = sqToCoords('h', 4);
         p1_toSq = sqToCoords('e', 1);
         p1_move = await genMoveArgs(p1_moveType, p1_pieceFile, p1_board, p1_setupKey, p1_gameKey);
-        await p1.move(p1_fromSq, p1_toSq, ...p1_move);
+        await p1.move(gameId, p1_fromSq, p1_toSq, p1_move);
 
         // b3 (error: game already over)
         p0_fromSq = sqToCoords('b', 2);
         p0_toSq = sqToCoords('b', 3);
-        await expect(p0.move(p0_fromSq, p0_toSq, ...DUMMY_MOVE_ARGS)).to.be.reverted;
+        await expect(p0.move(gameId, p0_fromSq, p0_toSq, DUMMY_MOVE_ARGS)).to.be.reverted;
     });
 
     async function genSetupArgs(boardSetup, boardSetupKey, gameKey, kingFile) {
@@ -187,7 +194,9 @@ describe("zkFischer contract test", function () {
         const b = [[argv[2], argv[3]], [argv[4], argv[5]]];
         const c = [argv[6], argv[7]];
         const Input = argv.slice(8);
-        return [a, b, c, Input];
+        return {
+            a: a, b: b, c: c, input: Input
+        };
     }
 
     async function genMoveArgs(moveType, pieceFile, boardSetup, boardSetupKey, gameKey) {
@@ -208,7 +217,8 @@ describe("zkFischer contract test", function () {
         const b = [[argv[2], argv[3]], [argv[4], argv[5]]];
         const c = [argv[6], argv[7]];
         const Input = argv.slice(8);
-        return [a, b, c, Input];
+        return {
+            a: a, b: b, c: c, input: Input
+        };
     }
-
 });

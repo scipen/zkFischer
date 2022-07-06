@@ -17,7 +17,7 @@ export async function connectContract() {
     let signerAddress = await signer.getAddress();
     console.log('signer: ', signerAddress);
 
-    gameContract = new ethers.Contract(address['polygon_zkFischer'], zkFischer.abi, signer);
+    gameContract = new ethers.Contract(address['devnet_ZkFischer'], zkFischer.abi, signer);
     console.log("Connected to Game Contract:", zkFischer);
     return signerAddress;
 }
@@ -46,25 +46,26 @@ export async function setup(
     });
 }
 
-export async function register() {
+export async function register(gameId: number) {
     console.log("Calling contract.register");
     try {
-        await gameContract.register();
+        await gameContract.register(gameId);
     } catch(error) {
         throw JSON.stringify(error);
     }
 }
 
-export async function getPlayer(idx: number) {
+export async function getPlayer(gameId: number, idx: number) {
     console.log("Calling contract.players");
     try {
-        return await gameContract.players(idx);
+        let game = await gameContract.games(gameId);
+        return game;
     } catch(error) {
         throw JSON.stringify(error);
     }
 }
 
-export async function getPlayerId() {
+export async function getPlayerId(gameId: number) {
     console.log("Calling contract.players for ID");
     try {
         const p0 = await gameContract.players(0);
@@ -82,7 +83,7 @@ export async function getPlayerId() {
     }
 }
 
-export async function getSetupHash(idx: number) {
+export async function getSetupHash(gameId: number, idx: number) {
     console.log("Calling contract.setupHashes");
     try {
         return await gameContract.setupHashes(idx);
@@ -91,17 +92,17 @@ export async function getSetupHash(idx: number) {
     }
 }
 
-export async function getStartingFile(i: number, j: number) {
+export async function getStartingFile(gameId: number, i: number, j: number) {
     console.log("Calling contract.setupHashes");
     return await gameContract.startingFiles(i, j);
 }
 
-export async function getPhase() {
+export async function getPhase(gameId: number) {
     console.log("Calling contract.phase");
     return await gameContract.phase();
 }
 
-export async function readBoard() {
+export async function readBoard(gameId: number) {
     console.log("Calling contract.board");
     let pieceCode;
     let boardState : gameUtils.Position = {};  // eg {'a1': 'bQ'}
@@ -117,7 +118,7 @@ export async function readBoard() {
     return boardState;
 }
 
-export async function pubSubmitSetup(position: gameUtils.Position, boardSetupKey: any, playerId: 0 | 1) {
+export async function pubSubmitSetup(gameId: number, position: gameUtils.Position, boardSetupKey: any, playerId: 0 | 1) {
     console.log("Calling contract.setupBoard");
 
     let boardSetup = gameUtils.posToBoardSetupInput(position, playerId);
@@ -139,7 +140,7 @@ export async function pubSubmitSetup(position: gameUtils.Position, boardSetupKey
     });
 }
 
-export async function pubSubmitMove(pubInput: any) {
+export async function pubSubmitMove(gameId: number, pubInput: any) {
     console.log("Calling contract.move");
 
     let requiredHash = await getSetupHash(pubInput["playerId"]);
@@ -170,7 +171,7 @@ export async function pubSubmitMove(pubInput: any) {
     if (piece[1] == 'K' || piece[1] == 'P') {
         // public inputs dont need proofs. call contract directly
         try {
-            response = await gameContract.move(pubInput["fromSq"], pubInput["toSq"],
+            response = await gameContract.move(gameId: number, pubInput["fromSq"], pubInput["toSq"],
                 [0, 0],
                 [[0, 0], [0, 0]],
                 [0, 0],

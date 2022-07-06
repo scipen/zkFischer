@@ -1,6 +1,6 @@
 {
-  "short_name": "zkFischer",
-  "name": "zkFischer",
+  "short_name": "React App",
+  "name": "zkApp",
   "icons": [
     {
       "src": "favicon.ico",

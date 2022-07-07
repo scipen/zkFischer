@@ -1,6 +1,6 @@
 # zkFischer
 
-**Play here:** [https://zk-fischer.vercel.app/](https://zk-fischer.vercel.app/) (only one active game at a time, globally)
+**Play here:** [https://zk-fischer.vercel.app/](https://zk-fischer.vercel.app/)
 
 <img src="ui/public/gameplay.png" width="512" height="512" />
 
@@ -10,25 +10,13 @@ In this variant, you start by rearranging your back rank however you want. All p
 
 Currently, there is no pawn promotion or en passant due to hitting contract bytecode size limitations. There is also no castling, 3-fold repetition, or 50 move rule. It is legal to move your king into check.
 
-Polygon mainnet contracts:
-```
-"polygon_VerifyPlacementVerifier": "0x91Dd7378A3176382f1c07EdD0444e99B4b412890",
-"polygon_VerifyMoveVerifier": "0x49E2410704126E5d59bf75E1bd822A6c4fe34491",
-"polygon_zkFischer": "0x76c8adbE58E2E0078F999051E4235429962A9152"
-```
-
-Harmony devnet contracts:
-```
-"devnet_VerifyPlacementVerifier": "0xa414216B4350be4F268DC5Ce85b4DfbD6342c2C1",
-"devnet_VerifyMoveVerifier": "0x052Cc560E7B50DE11F754d2fe20A6857bedC8ceF",
-"devnet_zkFischer": "0x0530f1E594931d8F33E4718fFB0909635D6c02b8",
-```
+Deployed contract addresses: see `ui/src/artifacts/address.json` and `hardhat/hardhat.config.js`.
 
 Referenced sources:
 * https://github.com/socathie/zkApp/
 * https://github.com/enu-kuro/zku-final-project/
 
-**Play here:** [https://zk-fischer.vercel.app/](https://zk-fischer.vercel.app/) (only one active game at a time, globally)
+**Play here:** [https://zk-fischer.vercel.app/](https://zk-fischer.vercel.app/)
 
 
 ## Building

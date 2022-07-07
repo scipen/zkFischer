@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 import address from './artifacts/address.json';
 import { generateCalldata } from './circuit_js/generate_calldata';
-import zkFischer from './artifacts/zkFischer.json';
+import ZkFischer from './artifacts/ZkFischer.json';
 import { buildPoseidon } from "./poseidon";
 import * as gameUtils from "./gameUtils";
 
@@ -17,33 +17,38 @@ export async function connectContract() {
     let signerAddress = await signer.getAddress();
     console.log('signer: ', signerAddress);
 
-    gameContract = new ethers.Contract(address['devnet_ZkFischer'], zkFischer.abi, signer);
-    console.log("Connected to Game Contract:", zkFischer);
+    gameContract = new ethers.Contract(address['devnet_ZkFischer'], ZkFischer.abi, signer);
+    console.log("Connected to Game Contract:", ZkFischer);
     return signerAddress;
 }
 
-export async function setup(
-    acctAddress: string,
-    onRegister: (acctAddress: string, eventAddress: string) => void,
-    onSetupBoard: (acctAddress: string, eventAddress: string) => void,
-    onMove: (acctAddress: string, eventAddress: string) => void,
-    onGameEnd: (acctAddress: string, eventAddress: string) => void
-    ) {
+export async function setup() {
     console.log("Setting up contract connection...");
     signerAddress = await connectContract();
+}
 
-    gameContract.on("Register", (eventAddress) => {
-        onRegister(acctAddress, eventAddress);
-    });
-    gameContract.on("SetupBoard", (eventAddress) => {
-        onSetupBoard(acctAddress, eventAddress);
-    });
-    gameContract.on("Move", (eventAddress) => {
-        onMove(acctAddress, eventAddress);
-    });
-    gameContract.on("GameEnd", (eventAddress) => {
-        onGameEnd(acctAddress, eventAddress);
-    });
+export async function listen(
+    gameId: number,
+    acctAddress: string,
+    eventName: string,
+    callback: (acctAddress: string, eventAddress: string) => void
+) {
+    console.log(`Listening for ${eventName} for game ${gameId}...`);
+    if (gameContract.listenerCount(eventName) == 0) {
+        gameContract.on(eventName, (eventGameId, eventAddress) => {
+            if (gameId == eventGameId) {
+                callback(acctAddress, eventAddress);
+            }
+        });
+    }
+}
+
+export async function clearListen() {
+    console.log(`Removing all listeners...`);
+    gameContract.removeAllListeners("Register");
+    gameContract.removeAllListeners("SetupBoard");
+    gameContract.removeAllListeners("Move");
+    gameContract.removeAllListeners("GameEnd");
 }
 
 export async function register(gameId: number) {
@@ -55,21 +60,34 @@ export async function register(gameId: number) {
     }
 }
 
-export async function getPlayer(gameId: number, idx: number) {
-    console.log("Calling contract.players");
+export async function getGame(gameId: number) {
+    console.log("Calling contract.getGame");
     try {
-        let game = await gameContract.games(gameId);
-        return game;
+        return await gameContract.games(gameId);
     } catch(error) {
         throw JSON.stringify(error);
     }
 }
 
-export async function getPlayerId(gameId: number) {
-    console.log("Calling contract.players for ID");
+export function getPlayer(game: any, idx: number) {
+    console.log("Calling contract.getPlayer");
     try {
-        const p0 = await gameContract.players(0);
-        const p1 = await gameContract.players(1);
+        if (idx == 0) {
+            return game['player1'];
+        } else {
+            return game['player2'];
+        }
+    } catch(error) {
+        throw JSON.stringify(error);
+    }
+}
+
+export function getPlayerId(game: any) {
+    console.log("Calling contract.getPlayerId");
+    try {
+        const p0 = game['player1'];
+        const p1 = game['player2'];
+
         console.log(`Players: [${p0}, ${p1}]`);
         if (signerAddress == p0) {
             return 0;
@@ -83,32 +101,37 @@ export async function getPlayerId(gameId: number) {
     }
 }
 
-export async function getSetupHash(gameId: number, idx: number) {
-    console.log("Calling contract.setupHashes");
+export function getSetupHash(game: any, idx: number) {
+    console.log("Calling contract.getSetupHash");
     try {
-        return await gameContract.setupHashes(idx);
+        if (idx == 0) {
+            return game['setupHash1'];
+        } else {
+            return game['setupHash2'];
+        }
     } catch(error) {
         throw JSON.stringify(error);
     }
 }
 
-export async function getStartingFile(gameId: number, i: number, j: number) {
-    console.log("Calling contract.setupHashes");
-    return await gameContract.startingFiles(i, j);
-}
-
-export async function getPhase(gameId: number) {
+export function getPhase(game: any) {
     console.log("Calling contract.phase");
-    return await gameContract.phase();
+    return game['phase'];
 }
 
-export async function readBoard(gameId: number) {
-    console.log("Calling contract.board");
+export async function getStartingFile(gameId: number, i: number, j: number) {
+    console.log("Calling contract.getStartingFile");
+    return await gameContract.getStartingFile(gameId, i, j);
+}
+
+export async function getBoard(gameId: number) {
+    console.log("Calling contract.getBoard");
     let pieceCode;
-    let boardState : gameUtils.Position = {};  // eg {'a1': 'bQ'}
+    let boardState : gameUtils.Position = {};
+    let board = await gameContract.getBoard(gameId);
     for (let i=0; i<8; i++) {
         for (let j=0; j<8; j++) {
-            pieceCode = await gameContract.board(i, j);
+            pieceCode = board[i][j];
             pieceCode = Number(pieceCode);
             if (pieceCode != 0) {
                 boardState[gameUtils.coordsToSq(i, j)] = gameUtils.codeToPc[pieceCode];
@@ -131,25 +154,25 @@ export async function pubSubmitSetup(gameId: number, position: gameUtils.Positio
     const poseidonHash = poseidon.F.e(poseidon([...boardSetup, boardSetupKey, gameKey]));
     const setupHash = poseidon.F.toString(poseidonHash, 10);
 
-    return await submitSetup({
-        "setupHash": setupHash,
-        "kingFile": kingFile,
-        "gameKey": gameKey,
-        "boardSetup": boardSetup,
-        "boardSetupKey": boardSetupKey
-    });
+    return await submitSetup(
+        gameId,
+        {
+            "setupHash": setupHash,
+            "kingFile": kingFile,
+            "gameKey": gameKey,
+            "boardSetup": boardSetup,
+            "boardSetupKey": boardSetupKey
+        }
+    );
 }
 
-export async function pubSubmitMove(gameId: number, pubInput: any) {
+export async function pubSubmitMove(pubInput: any) {
     console.log("Calling contract.move");
 
-    let requiredHash = await getSetupHash(pubInput["playerId"]);
-    requiredHash = BigInt(requiredHash["_hex"]).toString();
-
+    let requiredHash = pubInput["requiredHash"];
     let piece = pubInput["piece"];
     let startingFile = pubInput["pcStartingFile"]["_hex"];
-    let startingFileBin = (parseInt(startingFile, 16) - 1).toString(2);
-    // -1 above because we added one in the contract to attempt bytecode shrink but didn't update all interfaces
+    let startingFileBin = parseInt(startingFile, 16).toString(2);
     startingFileBin = startingFileBin.padStart(3, '0');
 
     let pieceFile = [parseInt(startingFileBin[0]), parseInt(startingFileBin[1]), parseInt(startingFileBin[2])];
@@ -171,16 +194,18 @@ export async function pubSubmitMove(gameId: number, pubInput: any) {
     if (piece[1] == 'K' || piece[1] == 'P') {
         // public inputs dont need proofs. call contract directly
         try {
-            response = await gameContract.move(gameId: number, pubInput["fromSq"], pubInput["toSq"],
-                [0, 0],
-                [[0, 0], [0, 0]],
-                [0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0]);
+            response = await gameContract.move(pubInput["gameId"], pubInput["fromSq"], pubInput["toSq"],
+                {
+                    a: [0, 0],
+                    b: [[0, 0], [0, 0]],
+                    c: [0, 0],
+                    input: [0, 0, 0, 0, 0, 0, 0, 0, 0]
+                });
         } catch(error) {
             throw JSON.stringify(error);
         }
     } else {
-        response = await submitMove(input);
+        response = await submitMove(pubInput["gameId"], input);
     }
     if (response) {
         if (pubInput["capturedPiece"] == 'wK' || pubInput["capturedPiece"] == 'bK') {
@@ -193,12 +218,20 @@ export async function pubSubmitMove(gameId: number, pubInput: any) {
     }
 }
 
-export async function submitSetup(input: any) {
+export async function submitSetup(gameId: number, input: any) {
     console.log(input);
     let calldata = await generateCalldata(input, 'verifyPlacement_final.zkey', 'verifyPlacement.wasm');
     if (calldata) {
         try {
-            let response = await gameContract.setupBoard(calldata[0], calldata[1], calldata[2], calldata[3]);
+            let response = await gameContract.setupBoard(
+                gameId,
+                {
+                    a: calldata[0],
+                    b: calldata[1],
+                    c: calldata[2],
+                    input: calldata[3]
+                }
+            );
             if (response) {
                 return JSON.stringify(input["boardSetup"]);
             }
@@ -214,7 +247,7 @@ export async function submitSetup(input: any) {
     }
 }
 
-export async function submitMove(input: any) {
+export async function submitMove(gameId: number, input: any) {
     console.log(input);
     let fromSq = input["fromSq"];
     let toSq = input["toSq"];
@@ -224,7 +257,14 @@ export async function submitMove(input: any) {
     let calldata = await generateCalldata(input, 'verifyMove_final.zkey', 'verifyMove.wasm');
     if (calldata) {
         try {
-            let response = await gameContract.move(fromSq, toSq, calldata[0], calldata[1], calldata[2], calldata[3]);
+            let response = await gameContract.move(gameId, fromSq, toSq,
+                {
+                    a: calldata[0],
+                    b: calldata[1],
+                    c: calldata[2],
+                    input: calldata[3]
+                }
+            );
             if (response) {
                 return "Move successful.";
             }
@@ -237,15 +277,5 @@ export async function submitMove(input: any) {
     }
     else {
         throw "Witness generation failed. Check if your move is valid.";
-    }
-}
-
-export async function resetGame() {
-    console.log("Calling contract.resetGame");
-    try {
-        await gameContract.resetGame();
-        return "Game reset.";
-    } catch(error) {
-        throw JSON.stringify(error);
     }
 }

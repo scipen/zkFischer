@@ -44,13 +44,14 @@ enum GamePhase {
 }
 
 struct Game {
+    address player1;
+    address player2;
+    uint setupHash1;
+    uint setupHash2;
     uint gameKey;
-    uint phasingPlayer;
     uint[8][8] startingFiles;
     uint[8][8] board;
-
-    address[2] players;
-    uint[2] setupHashes;
+    bool isWhiteMove;
     GamePhase phase;
 }
 
@@ -59,8 +60,6 @@ contract ZkFischer {
     address public zkFischerUtilsAddr;
     ZkFischerUtils public zkFischerUtils;
     
-    // uint public gameKey;
-    // uint public phasingPlayer;
     uint constant NA_FILE = 0;
     uint constant NOCOLOR = 0;
     uint constant WHITE = 1;
@@ -69,11 +68,6 @@ contract ZkFischer {
     // mapping(string => uint) private pieces;  // values specific to contract
     // mapping(uint => uint) private pieceColor;  // see constructor
     // mapping(string => uint8[3]) private allowedPieces;  // keys, values from in circuit
-
-    // uint[8][8] public startingFiles;
-    // uint[8][8] public board;
-    // address[2] public players;
-    // uint[2] public setupHashes;
 
     address public placementVerifier;
     address public moveVerifier;
@@ -85,12 +79,11 @@ contract ZkFischer {
         _;
     }
 
-    event PhaseChange(GamePhase phase);
-    event Register(address indexed player);
-    event SetupBoard(address indexed player);
-    event Move(address indexed player);
-    event GameEnd(address indexed winner);
-    event Initialize();
+    event PhaseChange(uint gameId, GamePhase phase);
+    event Register(uint gameId, address indexed player);
+    event SetupBoard(uint gameId, address indexed player);
+    event Move(uint gameId, address indexed player);
+    event GameEnd(uint gameId, address indexed winner);
 
     constructor(address _placementVerifier, address _moveVerifier, address _zkFischerUtilsAddr) {
         placementVerifier = _placementVerifier;
@@ -175,22 +168,22 @@ contract ZkFischer {
         // TODO
         // gameKey = 0;
         games[gameId].phase = GamePhase.Register;
-        emit Initialize();
+        games[gameId].isWhiteMove = true;
     }
 
     function register(uint gameId) external atPhase(gameId, GamePhase.Register) {
-        if (games[gameId].players[0] == address(0)) {
+        if (games[gameId].player1 == address(0)) {
             initGame(gameId);
-            games[gameId].players[0] = msg.sender;
-            emit Register(msg.sender);
+            games[gameId].player1 = msg.sender;
+            emit Register(gameId, msg.sender);
         } 
         else {
-            require(games[gameId].players[0] != msg.sender, "Already reg");
-            require(games[gameId].players[1] == address(0), "Game full");
-            games[gameId].players[1] = msg.sender;
-            emit Register(msg.sender);
+            require(games[gameId].player1 != msg.sender, "Already reg");
+            require(games[gameId].player2 == address(0), "Game full");
+            games[gameId].player2 = msg.sender;
+            emit Register(gameId, msg.sender);
             games[gameId].phase = GamePhase.SetupBoard;
-            emit PhaseChange(GamePhase.SetupBoard);
+            emit PhaseChange(gameId, GamePhase.SetupBoard);
         }
     }
 
@@ -199,7 +192,7 @@ contract ZkFischer {
         uint gameId,
         PlacementVerifierInput memory verifierInput
     ) external atPhase(gameId, GamePhase.SetupBoard) {
-        require(msg.sender == games[gameId].players[0] || msg.sender == games[gameId].players[1], "Not registered for gameId");
+        require(msg.sender == games[gameId].player1 || msg.sender == games[gameId].player2, "Not registered for gameId");
 
         // verifierInput.input: [isValid, setupHash, kingFile, gameKey]
         require(verifierInput.input[0] == 1, "Proof asserts failure");
@@ -213,25 +206,25 @@ contract ZkFischer {
             "Bad proof"
         );
 
-        if (msg.sender == games[gameId].players[0]) {
-            require(games[gameId].setupHashes[0] == 0, "P1 already setup");
-            games[gameId].setupHashes[0] = verifierInput.input[1];
+        if (msg.sender == games[gameId].player1) {
+            require(games[gameId].setupHash1 == 0, "P1 already setup");
+            games[gameId].setupHash1 = verifierInput.input[1];
             // board[7][input[2]] = pieces['wK'];
             games[gameId].board[7][verifierInput.input[2]] = 5;
-            emit SetupBoard(msg.sender);
-        } else if (msg.sender == games[gameId].players[1]) {
-            require(games[gameId].setupHashes[1] == 0, "P2 already setup");
-            games[gameId].setupHashes[1] = verifierInput.input[1];
+            emit SetupBoard(gameId, msg.sender);
+        } else if (msg.sender == games[gameId].player2) {
+            require(games[gameId].setupHash2 == 0, "P2 already setup");
+            games[gameId].setupHash2 = verifierInput.input[1];
             games[gameId].board[0][verifierInput.input[2]] = 15;
             // board[0][input[2]] = pieces['bK'];
-            emit SetupBoard(msg.sender);
+            emit SetupBoard(gameId, msg.sender);
         } else {
             revert("Unexpected error");
         }
 
-        if (games[gameId].setupHashes[0] != 0 && games[gameId].setupHashes[1] != 0) {
+        if (games[gameId].setupHash2 != 0 && games[gameId].setupHash1 != 0) {
             games[gameId].phase = GamePhase.Playing;
-            emit PhaseChange(GamePhase.Playing);
+            emit PhaseChange(gameId, GamePhase.Playing);
         }
     }
 
@@ -247,15 +240,12 @@ contract ZkFischer {
 
         // validate caller
         uint calculatedRequiredSetupHash;
-        bool isWhiteMove;
-        if (msg.sender == games[gameId].players[0]) {
-            require(games[gameId].phasingPlayer == 0, "It's P2's turn");
-            calculatedRequiredSetupHash = games[gameId].setupHashes[0];
-            isWhiteMove = true;
-        } else if (msg.sender == games[gameId].players[1]) {
-            require(games[gameId].phasingPlayer == 1, "It's P1's turn");
-            calculatedRequiredSetupHash = games[gameId].setupHashes[1];
-            isWhiteMove = false;
+        if (msg.sender == games[gameId].player1) {
+            require(games[gameId].isWhiteMove , "It's P2's turn");
+            calculatedRequiredSetupHash = games[gameId].setupHash1;
+        } else if (msg.sender == games[gameId].player2) {
+            require(!games[gameId].isWhiteMove, "It's P1's turn");
+            calculatedRequiredSetupHash = games[gameId].setupHash2;
         } else {
             revert("Not registered for gameId");
         }
@@ -264,10 +254,10 @@ contract ZkFischer {
         uint piece = games[gameId].board[fromSq[0]][fromSq[1]];
         // if (piece != pieces['wZ'] && piece != pieces['bZ']) {
         if (piece != 9 && piece != 19) {
-            zkFischerUtils.validateRevealedMove(games[gameId].board, fromSq, toSq, isWhiteMove);
+            zkFischerUtils.validateRevealedMove(games[gameId].board, fromSq, toSq, games[gameId].isWhiteMove);
         } else {
             uint8[3] memory calculatedAllowedPieces;
-            calculatedAllowedPieces = zkFischerUtils.validateHiddenMove(games[gameId].board, fromSq, toSq, isWhiteMove);
+            calculatedAllowedPieces = zkFischerUtils.validateHiddenMove(games[gameId].board, fromSq, toSq, games[gameId].isWhiteMove);
         
             // validate proof if moving hidden piece
             uint _pieceFile = verifierInput.input[1]*4 + verifierInput.input[2]*2 + verifierInput.input[3];  // bin2dec
@@ -303,13 +293,24 @@ contract ZkFischer {
         // board[fromSq[0]][fromSq[1]] = pieces['NA'];
         games[gameId].startingFiles[toSq[0]][toSq[1]] = games[gameId].startingFiles[fromSq[0]][fromSq[1]];
         games[gameId].startingFiles[fromSq[0]][fromSq[1]] = NA_FILE;
-        games[gameId].phasingPlayer = games[gameId].phasingPlayer == 0 ? 1 : 0;
-        emit Move(msg.sender);
-
+        games[gameId].isWhiteMove = !games[gameId].isWhiteMove;
+        
         // end game
         if (isWinning) {
             games[gameId].phase = GamePhase.Ended;
-            emit GameEnd(msg.sender);
+            emit GameEnd(gameId, msg.sender);
+        } else {
+            emit Move(gameId, msg.sender);
         }
+    }
+
+    function getBoard(uint gameId) external view returns (uint[8][8] memory) {
+        return games[gameId].board;
+    }
+
+    function getStartingFile(uint gameId, uint i, uint j) external view returns (uint) {
+        require(0 <= i && i < 8 &&
+                0 <= j && j < 8, "idx out-of-bounds");
+        return games[gameId].startingFiles[i][j];
     }
 }

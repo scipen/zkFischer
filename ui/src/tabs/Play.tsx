@@ -91,6 +91,9 @@ Avoid refreshing the page for the best experience (resuming from local state is 
 **Q: My piece suddenly disappeared / my local board got corrupted!**  
 **A:** Sorry, there's only limited client-side validation right now. Try refreshing the page and clicking "Restore Game".  
 
+**Q: My opponent moved over 30 seconds ago and my screen still hasn't updated.**  
+**A:** Check the console for error messages -- there may be a bug. Try refreshing the page and clicking "Restore Game".  
+
 **Q: Can I play against an AI?**  
 **A:** Not currently.
 
@@ -124,7 +127,7 @@ You will also need to export the private circuit inputs you used during game set
         Register_Done: `Waiting for opponent to join (page will automatically update)...`,
         Setup_Done: `Waiting for opponent to finish setup (page will automatically update)...`,
         Playing_Done: `Waiting for opponent to move (page will automatically update)...`,
-        Ended: `Game over. Click "Reset Game" to play again!`
+        Ended: `Game over. Click "Clear State" to play again!`
     }
 
     const [gameId, setGameId] = useState(0);
@@ -191,13 +194,29 @@ You will also need to export the private circuit inputs you used during game set
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
+    const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+
     // function updateReactState(localStorageKey: string, setter: any, value: any) {
     //     setter(value);
     //     localStorage.setItem(localStorageKey, value);
     // }
 
     async function onRegister(acctAddress: string, eventAddress: string) {
-        console.log("onRegister: ", eventAddress);
+        console.log("onRegister: ", eventAddress, gameId);
+        
+        // todo: sometimes we get stale reads? big hack
+        let attempts = 0;
+        while (attempts < 3) {
+            try {
+                const game = await contract.getGame(gameId);
+                const playerId = contract.getPlayerId(game);
+            } catch (error) {
+                attempts += 1;
+                await delay(5000);
+                continue;
+            }
+            break;
+        }
         const game = await contract.getGame(gameId);
 
         if (acctAddress.toLowerCase() === eventAddress.toLowerCase()) {
@@ -211,8 +230,9 @@ You will also need to export the private circuit inputs you used during game set
                 setGamePhase(phaseInfo.Register_Done);
                 localStorage.setItem(GAME_PHASE, phaseInfo.Register_Done);
             } catch (error) {
-                setErrorMsg(error.toString());
-                setError(true);
+                console.log(error);
+                // setErrorMsg(error.toString());
+                // setError(true);
             };
             setRegisteringConfirm(false);
         }
@@ -243,7 +263,7 @@ You will also need to export the private circuit inputs you used during game set
     }
 
     async function onSetupBoard(acctAddress: string, eventAddress: string) {
-        console.log("onSetupBoard: ", eventAddress);
+        console.log("onSetupBoard: ", eventAddress, gameId);
         const game = await contract.getGame(gameId);
 
         const playerId = contract.getPlayerId(game);
@@ -272,7 +292,7 @@ You will also need to export the private circuit inputs you used during game set
     }
 
     async function onMove(acctAddress: string, eventAddress: string) {
-        console.log("onMove: ", eventAddress);
+        console.log("onMove: ", eventAddress, gameId);
 
         // shouldn't ever happen now but unvalidated spaghetti
         if (gamePhase != phaseInfo.Ended) {
@@ -296,7 +316,7 @@ You will also need to export the private circuit inputs you used during game set
     }
 
     async function onGameEnd(acctAddress: string, eventAddress: string) {
-        console.log("onGameEnd: ", eventAddress);
+        console.log("onGameEnd: ", eventAddress, gameId);
         if (acctAddress.toLowerCase() != eventAddress.toLowerCase()) {
             setCallOutputMsg("You came in 2nd place.");
             setCallOutput(true);
@@ -306,6 +326,7 @@ You will also need to export the private circuit inputs you used during game set
         }
         setGamePhase(phaseInfo.Ended);
         localStorage.setItem(GAME_PHASE, phaseInfo.Ended);
+        setSubmittingMoveConfirm(false);
     }
 
     useEffect(() => {
@@ -501,6 +522,7 @@ You will also need to export the private circuit inputs you used during game set
             const chainPosition = await contract.getBoard(fnGameId);
             const game = await contract.getGame(fnGameId);
             const playerId = contract.getPlayerId(game);
+            // const contractPhase = contract.getPhase(game);
             const computedPosition = gameUtils.computePlayerPosition(currentPosition, chainPosition, playerId);
             setPosition(computedPosition);
             localStorage.setItem(LAST_GAME_POSITION, JSON.stringify(computedPosition));

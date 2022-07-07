@@ -17,7 +17,7 @@ export async function connectContract() {
     let signerAddress = await signer.getAddress();
     console.log('signer: ', signerAddress);
 
-    gameContract = new ethers.Contract(address['devnet_ZkFischer'], ZkFischer.abi, signer);
+    gameContract = new ethers.Contract(address['polygon_ZkFischer'], ZkFischer.abi, signer);
     console.log("Connected to Game Contract:", ZkFischer);
     return signerAddress;
 }

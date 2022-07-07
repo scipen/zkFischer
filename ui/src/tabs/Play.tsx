@@ -361,8 +361,7 @@ You will also need to export the private circuit inputs you used during game set
             setRegisteringConfirm(true);
         } catch (error) {
             await contract.clearListen();
-            console.error(error.toString());
-            setErrorMsg("Error joining. Maybe this Game ID is already in use?");
+            setErrorMsg(`Unable to join. Maybe this Game ID was already taken? error: ${error.toString()}`);
             setError(true);
         };
         setRegistering(false);
@@ -389,7 +388,7 @@ You will also need to export the private circuit inputs you used during game set
             setSubmittingSetup(false);
             setSubmittingSetupConfirm(true);
         } catch (error) {
-            setErrorMsg(error.toString());
+            setErrorMsg(`Failed to submit setup. error: ${error.toString()}`);
             setError(true);
         };
         setSubmittingSetup(false);
@@ -448,7 +447,7 @@ You will also need to export the private circuit inputs you used during game set
             setSubmittingMove(false);
             setSubmittingMoveConfirm(true);
         } catch (error) {
-            setErrorMsg(error.toString());
+            setErrorMsg(`Failed to submit move. error: ${error.toString()}`);
             setError(true);
             setSubmittingMove(false);
         }

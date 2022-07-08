@@ -7,7 +7,6 @@ import Paper from '@mui/material/Paper';
 import Typography from "@mui/material/Typography";
 import Chessboard from '../../deps/chessboardjsx/Chessboard';
 import TabPanel from "./helpers/TabPanel";
-
 import * as contract from "../game/contract";
 import * as gameUtils from "../game/gameUtils";
 
@@ -223,7 +222,7 @@ export default function Game(props: any) {
             loadLocalState();
             const callAsync = async () => {
                 await contract.setup();
-                await restoreGame(true);
+                await restoreGame(null, true);
             }
             callAsync();
         }
@@ -400,7 +399,7 @@ export default function Game(props: any) {
             await contract.listen(tmpGameId, props.currentAccount, "GameEnd", onGameEnd);
             await readBoard(tmpGameId);
         }
-        if (onInit) {
+        if (!onInit) {
             setCallOutputMsg("Restored existing game (if any).");
             setCallOutput(true);
         }
@@ -435,7 +434,7 @@ export default function Game(props: any) {
     };
 
     return (
-        <TabPanel value={props.tabValue} index={1}>
+        <TabPanel value={props.tabValue} index={props.index}>
             <Grid container spacing={0}>
                 <Grid item xs={8} spacing={1} container direction="column">
                     <Grid item>

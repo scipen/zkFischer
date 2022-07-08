@@ -44,7 +44,7 @@ Avoid refreshing the page for the best experience (resuming from local state is 
 **Q: My piece suddenly disappeared / my local board got corrupted!**  
 **A:** Sorry, there's only limited client-side validation right now. Try refreshing the page and clicking "Restore Game".  
 
-**Q: My opponent moved over 60 seconds ago and my screen still hasn't updated.**  
+**Q: My opponent moved over 30 seconds ago and my screen still hasn't updated.**  
 **A:** Check the console for error messages -- there may be a bug or just network congestion. Try refreshing the page and clicking "Restore Game".  
 
 **Q: Can I play against an AI?**  

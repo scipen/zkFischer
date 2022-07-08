@@ -63,6 +63,8 @@ The game runs fully on-chain using zkSNARKs to allow only legal moves. Built as 
 
 **Github:** [https://github.com/scipen/zkFischer](https://github.com/scipen/zkFischer)  
 **Demo:** [https://www.youtube.com/watch?v=GyXw3iMLfX0](https://www.youtube.com/watch?v=GyXw3iMLfX0)
+**Polygon Mainnet** [https://zk-fischer.vercel.app/](https://zk-fischer.vercel.app/)
+**Harmony Devnet** [https://zk-fischer-git-dev-scipen.vercel.app/](https://zk-fischer-git-dev-scipen.vercel.app/)
     `;
 
     const mdHow = `
@@ -92,8 +94,8 @@ Avoid refreshing the page for the best experience (resuming from local state is 
 **Q: My piece suddenly disappeared / my local board got corrupted!**  
 **A:** Sorry, there's only limited client-side validation right now. Try refreshing the page and clicking "Restore Game".  
 
-**Q: My opponent moved over 30 seconds ago and my screen still hasn't updated.**  
-**A:** Check the console for error messages -- there may be a bug. Try refreshing the page and clicking "Restore Game".  
+**Q: My opponent moved over 60 seconds ago and my screen still hasn't updated.**  
+**A:** Check the console for error messages -- there may be a bug or just network congestion. Try refreshing the page and clicking "Restore Game".  
 
 **Q: Can I play against an AI?**  
 **A:** Not currently.
@@ -207,7 +209,7 @@ You will also need to export the private circuit inputs you used during game set
         
         // todo: sometimes we get stale reads? big hack
         let attempts = 0;
-        while (attempts < 10) {
+        while (attempts < 20) {
             try {
                 const game = await contract.getGame(gameId);
                 const playerId = contract.getPlayerId(game);

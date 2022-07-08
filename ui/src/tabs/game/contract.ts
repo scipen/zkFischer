@@ -1,8 +1,8 @@
 import { ethers } from "ethers";
-import address from './artifacts/address.json';
-import { generateCalldata } from './circuit_js/generate_calldata';
-import ZkFischer from './artifacts/ZkFischer.json';
-import { buildPoseidon } from "./poseidon";
+import address from '../../artifacts/address.json';
+import { generateCalldata } from '../../circuit_js/generate_calldata';
+import ZkFischer from '../../artifacts/ZkFischer.json';
+import { buildPoseidon } from "../../poseidon";
 import * as gameUtils from "./gameUtils";
 
 let poseidon;

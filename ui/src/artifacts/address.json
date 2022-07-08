@@ -1,10 +1,10 @@
 {
-    "devnet_VerifyPlacementVerifier": "0x91Dd7378A3176382f1c07EdD0444e99B4b412890",
-    "devnet_VerifyMoveVerifier": "0x49E2410704126E5d59bf75E1bd822A6c4fe34491",
-    "devnet_ZkFischerUtils": "0x76c8adbE58E2E0078F999051E4235429962A9152",
-    "devnet_ZkFischer": "0x86592889faCd3B4e98E07887DD2Ab829F39078f3",
-    "polygon_VerifyPlacementVerifier": "0x91Dd7378A3176382f1c07EdD0444e99B4b412890",
-    "polygon_VerifyMoveVerifier": "0x49E2410704126E5d59bf75E1bd822A6c4fe34491",
-    "polygon_ZkFischerUtils": "0x5E509F773D72F343273d47377d9cA805Ba5e078e",
-    "polygon_ZkFischer": "0x0C11b26926A4874A0a331273ED99c6249Dadf24a"
+    "harmony_devnet_VerifyPlacementVerifier": "0x0C11b26926A4874A0a331273ED99c6249Dadf24a",
+    "harmony_devnet_VerifyMoveVerifier": "0x97Ea408114838D15869b91C9F10432bE526261CC",
+    "harmony_devnet_ZkFischerUtils": "0x8639786fb5B6A4C625ba29Df7a0e27a267492af9",
+    "harmony_devnet_ZkFischer": "0x5A4bF708875eFf42d0e531c755efB52470a3D299",
+    "polygon_mainnet_VerifyPlacementVerifier": "0x8639786fb5B6A4C625ba29Df7a0e27a267492af9",
+    "polygon_mainnet_VerifyMoveVerifier": "0x5A4bF708875eFf42d0e531c755efB52470a3D299",
+    "polygon_mainnet_ZkFischerUtils": "0x470F71180045135C7F9De029aC5493c74F44b17F",
+    "polygon_mainnet_ZkFischer": "0x37C38C9Bf9619d2413F37F2c8dB40A55b5AdB2Ce"
 }

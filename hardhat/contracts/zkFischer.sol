@@ -288,7 +288,16 @@ contract ZkFischer {
         // bool isWinning = (board[toSq[0]][toSq[1]] == pieces['wK'] || board[toSq[0]][toSq[1]] == pieces['bK']);
 
         // accept move
-        games[gameId].board[toSq[0]][toSq[1]] = games[gameId].board[fromSq[0]][fromSq[1]];
+        // promote pawns to queens
+        if (zkFischerUtils.isPawnPromotion(games[gameId].board, fromSq, toSq)) {
+            if (games[gameId].isWhiteMove) {
+                games[gameId].board[toSq[0]][toSq[1]] = 4;  // wQ
+            } else {
+                games[gameId].board[toSq[0]][toSq[1]] = 14;  // bQ
+            }
+        } else {
+            games[gameId].board[toSq[0]][toSq[1]] = games[gameId].board[fromSq[0]][fromSq[1]];
+        }
         games[gameId].board[fromSq[0]][fromSq[1]] = 0;
         // board[fromSq[0]][fromSq[1]] = pieces['NA'];
         games[gameId].startingFiles[toSq[0]][toSq[1]] = games[gameId].startingFiles[fromSq[0]][fromSq[1]];

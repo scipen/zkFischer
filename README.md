@@ -8,9 +8,9 @@ zkFischer is a variant of [Fischer random chess](https://en.wikipedia.org/wiki/F
 
 In this variant, you start by rearranging your back rank however you want. All pieces will be kept secret except for your king. During gameplay, you will generate ZKPs to show that you are only making valid moves. The game ends when a king is captured.
 
-Currently, there is no pawn promotion or en passant due to hitting contract bytecode size limitations. There is also no castling, 3-fold repetition, or 50 move rule. It is legal to move your king into check.
+Pawns will automatically promote to queens. Currently, there is no en passant, no castling, 3-fold repetition, or 50 move rule. It is legal to move your king into check.
 
-Deployed contract addresses: see `ui/src/artifacts/address.json` and `hardhat/hardhat.config.js`.
+Deployed contract addresses: see `ui/src/artifacts/address.json`.
 
 Referenced sources:
 * https://github.com/socathie/zkApp/

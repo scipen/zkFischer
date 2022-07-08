@@ -25,22 +25,22 @@ module.exports = {
             blockGasLimit: 0x1fffffffffffff,
             chainId: 1337
         },
-        devnet: {
+        harmonyDevnet: {
             url: "https://api.s0.ps.hmny.io",
             chainId: 1666900000,
             accounts: [`${DEPLOYER_PRIVATE_KEY}`]
         },
-        testnet: {
+        harmonyTestnet: {
             url: "https://api.s0.b.hmny.io",
             chainId: 1666700000,
             accounts: [`${DEPLOYER_PRIVATE_KEY}`]
         },
-        mainnet: {
+        harmonyMainnet: {
             url: "https://api.harmony.one",
             chainId: 1666600000,
             accounts: [`${DEPLOYER_PRIVATE_KEY}`]
         },
-        polygon: {
+        polygonMainnet: {
             url: "https://polygon-rpc.com",
             chainId: 137,
             accounts: [`${DEPLOYER_PRIVATE_KEY}`]

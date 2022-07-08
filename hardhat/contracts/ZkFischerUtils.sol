@@ -10,6 +10,22 @@ contract ZkFischerUtils {
     uint constant WHITE = 1;
     uint constant BLACK = 2;
 
+    function isPawnPromotion(
+        uint[8][8] calldata board,
+        uint[2] calldata fromSq,
+        uint[2] calldata toSq
+    ) external pure returns (bool) {
+        // assume validate was already called
+        uint piece = board[fromSq[0]][fromSq[1]];
+        // if (piece == pieces['wP'] || piece == pieces['bP'])
+        if (piece == 6 || piece == 16) {
+            if (toSq[0] == 0 || toSq[0] == 7) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     function validateRevealedMove(
         uint[8][8] calldata board,
         uint[2] calldata fromSq,
@@ -44,17 +60,32 @@ contract ZkFischerUtils {
                 if (dr == 2*expectedRowChange) {
                     // starting pawn move
                     require(fromSq[0] == startingPawnRank, "Bad pawn move");
-                    require(board[uint(int(fromSq[0])+expectedRowChange)][fromSq[1]] == 0, "Bad pawn move");
-                    require(board[uint(int(fromSq[0])+2*expectedRowChange)][fromSq[1]] == 0, "Bad pawn move");
+                    require(board[uint(int(fromSq[0])+expectedRowChange)][fromSq[1]] == 0, "Piece in pawn path");
+                    require(board[uint(int(fromSq[0])+2*expectedRowChange)][fromSq[1]] == 0, "Piece in pawn path");
                     // require(board[uint(int(fromSq[0])+1*expectedRowChange)][fromSq[1]] == pieces['NA'], "Piece in pawn path.");
                     // require(board[uint(int(fromSq[0])+2*expectedRowChange)][fromSq[1]] == pieces['NA'], "Piece in pawn path.");
                 } else {
                     require(dr == expectedRowChange, "Bad pawn move");
-                    require(board[uint(int(fromSq[0])+expectedRowChange)][fromSq[1]] == 0, "Bad pawn move");
+                    require(board[uint(int(fromSq[0])+expectedRowChange)][fromSq[1]] == 0, "Piece in pawn path");
                     // require(board[uint(int(fromSq[0])+1*expectedRowChange)][fromSq[1]] == pieces['NA'], "Piece in pawn path.");
                 }
             } else {
                 revert("Bad pawn move");
+            }
+        } else if (piece == 4 || piece == 14) {  // wQ or bQ
+            // check for invalid movement through pieces
+            uint adr = abs(dr);
+            uint adc = abs(dc);
+            require(adr == adc || adr == 0 || adc == 0, "Bad queen move");
+            int rStep = sign(dr);
+            int cStep = sign(dc);
+        
+            // iterate over path excluding endpoints
+            for (int i=1; i < int(max(adr, adc)); i++) {
+                require(
+                    board[uint(int(fromSq[0]) + rStep*i)][uint(int(fromSq[1]) + cStep*i)] == 0,
+                    "Can't move through pieces"
+                );
             }
         } else {
             revert("Unsupported piece");
@@ -93,7 +124,7 @@ contract ZkFischerUtils {
             // allowedPieces["diag"] = [3, 4, 0];  // diag
             _allowedPieces = [3, 4, 0];
         } else {
-            revert("400");
+            revert("Invalid move");
         }
 
         // knight moves at this point don't need more checks
@@ -110,7 +141,7 @@ contract ZkFischerUtils {
         for (int i=1; i < int(max(adr, adc)); i++) {
             require(
                 board[uint(int(fromSq[0]) + rStep*i)][uint(int(fromSq[1]) + cStep*i)] == 0,
-                "Bad M2"
+                "Can't move through pieces"
             );
             // require(
             //     board[uint(int(fromSq[0]) + rStep*i)][uint(int(fromSq[1]) + cStep*i)] == pieces['NA'],

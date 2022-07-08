@@ -177,6 +177,79 @@ describe("zkFischer contract test", function () {
         await expect(p0.move(gameId, p0_fromSq, p0_toSq, DUMMY_MOVE_ARGS)).to.be.reverted;
     });
 
+    it("Pawn promotion", async function () {
+        const gameId = 0;
+        await p0.register(gameId);
+        await p1.register(gameId);
+
+        let p0_board = [PIECES["R"], PIECES["N"], PIECES["B"], PIECES["Q"], PIECES["K"], PIECES["B"], PIECES["N"], PIECES["R"]];
+        let p0_setupKey = 1000;
+        let p0_gameKey = 0;
+        let p0_kingFile = 4;
+        let p0_setup = await genSetupArgs(p0_board, p0_setupKey, p0_gameKey, p0_kingFile);
+        await p0.setupBoard(gameId, p0_setup);
+
+        let p1_board = [PIECES["R"], PIECES["N"], PIECES["B"], PIECES["Q"], PIECES["K"], PIECES["B"], PIECES["N"], PIECES["R"]];
+        let p1_setupKey = 2000;
+        let p1_gameKey = 0;
+        let p1_kingFile = 4;
+        let p1_setup = await genSetupArgs(p1_board, p1_setupKey, p1_gameKey, p1_kingFile);
+        await p1.setupBoard(gameId, p1_setup);
+
+        let p0_move, p0_moveType, p0_pieceFile, p0_fromSq, p0_toSq;
+        let p1_move, p1_moveType, p1_pieceFile, p1_fromSq, p1_toSq;
+
+        // a4
+        p0_fromSq = sqToCoords('a', 2);
+        p0_toSq = sqToCoords('a', 4);
+        await p0.move(gameId, p0_fromSq, p0_toSq, DUMMY_MOVE_ARGS);
+        // ..h5
+        p1_fromSq = sqToCoords('h', 7);
+        p1_toSq = sqToCoords('h', 5);
+        await p1.move(gameId, p1_fromSq, p1_toSq, DUMMY_MOVE_ARGS);
+
+        // a5
+        p0_fromSq = sqToCoords('a', 4);
+        p0_toSq = sqToCoords('a', 5);
+        await p0.move(gameId, p0_fromSq, p0_toSq, DUMMY_MOVE_ARGS);
+        // ..h4
+        p1_fromSq = sqToCoords('h', 5);
+        p1_toSq = sqToCoords('h', 4);
+        await p1.move(gameId, p1_fromSq, p1_toSq, DUMMY_MOVE_ARGS);
+
+        // a6
+        p0_fromSq = sqToCoords('a', 5);
+        p0_toSq = sqToCoords('a', 6);
+        await p0.move(gameId, p0_fromSq, p0_toSq, DUMMY_MOVE_ARGS);
+        // ..h3
+        p1_fromSq = sqToCoords('h', 4);
+        p1_toSq = sqToCoords('h', 3);
+        await p1.move(gameId, p1_fromSq, p1_toSq, DUMMY_MOVE_ARGS);
+
+        // axb7
+        p0_fromSq = sqToCoords('a', 6);
+        p0_toSq = sqToCoords('b', 7);
+        await p0.move(gameId, p0_fromSq, p0_toSq, DUMMY_MOVE_ARGS);
+        // ..hxg2
+        p1_fromSq = sqToCoords('h', 3);
+        p1_toSq = sqToCoords('g', 2);
+        await p1.move(gameId, p1_fromSq, p1_toSq, DUMMY_MOVE_ARGS);
+
+        // bxa8=Q
+        p0_fromSq = sqToCoords('b', 7);
+        p0_toSq = sqToCoords('a', 8);
+        await p0.move(gameId, p0_fromSq, p0_toSq, DUMMY_MOVE_ARGS);
+        // ..gxh1=Q
+        p1_fromSq = sqToCoords('g', 2);
+        p1_toSq = sqToCoords('h', 1);
+        await p1.move(gameId, p1_fromSq, p1_toSq, DUMMY_MOVE_ARGS);
+
+        // Qxh1 (newly promoted queen)
+        p0_fromSq = sqToCoords('a', 8);
+        p0_toSq = sqToCoords('h', 1);
+        await p0.move(gameId, p0_fromSq, p0_toSq, DUMMY_MOVE_ARGS);
+    });
+
     async function genSetupArgs(boardSetup, boardSetupKey, gameKey, kingFile) {
         const poseidonHash = poseidon.F.e(poseidon([...boardSetup, boardSetupKey, gameKey]));
         const setupHash = poseidon.F.toString(poseidonHash, 10);

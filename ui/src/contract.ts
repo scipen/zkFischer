@@ -17,7 +17,7 @@ export async function connectContract() {
     let signerAddress = await signer.getAddress();
     console.log('signer: ', signerAddress);
 
-    gameContract = new ethers.Contract(address['polygon_ZkFischer'], ZkFischer.abi, signer);
+    gameContract = new ethers.Contract(address['harmony_devnet_ZkFischer'], ZkFischer.abi, signer);
     console.log("Connected to Game Contract:", ZkFischer);
     return signerAddress;
 }
@@ -193,6 +193,7 @@ export async function pubSubmitMove(pubInput: any) {
     console.log("Moving piece: ", piece);
     if (piece[1] == 'K' || piece[1] == 'P') {
         // public inputs dont need proofs. call contract directly
+        // but you could still generate one that asserts failure (e.g. for promoted pieces) and the contract will ignore it
         try {
             response = await gameContract.move(pubInput["gameId"], pubInput["fromSq"], pubInput["toSq"],
                 {
@@ -209,7 +210,7 @@ export async function pubSubmitMove(pubInput: any) {
     }
     if (response) {
         if (pubInput["capturedPiece"] == 'wK' || pubInput["capturedPiece"] == 'bK') {
-            return "You win! Click Reset Game to play again.";
+            return "You win!";
         } else {
             return "Move successful. Board will refresh when your opponent has moved."
         }

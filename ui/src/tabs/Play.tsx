@@ -81,7 +81,8 @@ Hidden pieces show up as ghosts but must still move according to their true iden
     
 zkFischer special rules:
 * The game ends on king capture. It's legal to have your king in check.
-* There's currently no pawn promotion, castling, en passant, 3 fold repetition, or game turn limit.
+* Pawns automatically promote to queens.
+* There's currently no castling, en passant, 3 fold repetition, or game turn limit.
 Some of these might be added in the future.
 
 Avoid refreshing the page for the best experience (resuming from local state is possible but might be buggy!).
@@ -206,7 +207,7 @@ You will also need to export the private circuit inputs you used during game set
         
         // todo: sometimes we get stale reads? big hack
         let attempts = 0;
-        while (attempts < 3) {
+        while (attempts < 10) {
             try {
                 const game = await contract.getGame(gameId);
                 const playerId = contract.getPlayerId(game);
@@ -461,6 +462,16 @@ You will also need to export the private circuit inputs you used during game set
             // update position
             let newPosition: gameUtils.Position = Object.assign({}, position);
             delete newPosition[computedMove["fromSq"]];
+
+            // another hack to track pawn promo client-side
+            const pcColor = computedMove["piece"][0];
+            const pcValue = computedMove["piece"][1];
+            if (pcValue === 'P' && computedMove["toSq"][1] === '8' && pcColor === 'w') {
+                computedMove["piece"] = 'wQ';
+            } else if (pcValue === 'P' && computedMove["toSq"][1] === '1' && pcColor === 'b') {
+                computedMove["piece"] = 'bQ';
+            }
+            
             newPosition[computedMove["toSq"]] = computedMove["piece"];
             setPosition(newPosition);
             localStorage.setItem(LAST_GAME_POSITION, JSON.stringify(newPosition));

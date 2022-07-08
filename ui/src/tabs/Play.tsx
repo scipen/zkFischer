@@ -62,8 +62,8 @@ allowing you to **rearrange your starting back rank** while keeping that setup *
 The game runs fully on-chain using zkSNARKs to allow only legal moves. Built as part of [ZKU](https://zku.one/).
 
 **Github:** [https://github.com/scipen/zkFischer](https://github.com/scipen/zkFischer)  
-**Demo:** [https://www.youtube.com/watch?v=GyXw3iMLfX0](https://www.youtube.com/watch?v=GyXw3iMLfX0)
-**Polygon Mainnet** [https://zk-fischer.vercel.app/](https://zk-fischer.vercel.app/)
+**Demo:** [https://www.youtube.com/watch?v=GyXw3iMLfX0](https://www.youtube.com/watch?v=GyXw3iMLfX0)  
+**Polygon Mainnet** [https://zk-fischer.vercel.app/](https://zk-fischer.vercel.app/)  
 **Harmony Devnet** [https://zk-fischer-git-dev-scipen.vercel.app/](https://zk-fischer-git-dev-scipen.vercel.app/)
     `;
 

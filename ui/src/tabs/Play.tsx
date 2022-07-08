@@ -63,16 +63,7 @@ export default function Play(props: any) {
                     />
                 </Grid>
             </Grid>
-            <Box
-                component="form"
-                sx={{
-                    "& .MuiTextField-root": { m: 1, width: "95%" },
-                    width: "99%", margin: 'auto'
-                }}
-            >   
-                <br /><br />
-                {loading ? <Loading text={loadingMsg} /> : <div />}
-            </Box>
+            {loading ? <Loading text={loadingMsg} /> : <div />}
         </Box>
     );
 }

@@ -52,7 +52,7 @@ const networks: {[key: string]: any} = {
     blockExplorerUrls: ['https://polygonscan.com']
   },
 }
-const expectedNetwork: any = networks.polygonMainnet;
+const expectedNetwork: any = networks.harmonyDevnet;
 
 export default function WalletConnector(props: any) {
   const { ethereum } = window;
